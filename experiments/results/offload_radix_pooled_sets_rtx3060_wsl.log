@@ -1,0 +1,12 @@
+Date: 2026-11-13 (America/Los_Angeles)
+Hardware: RTX 3060, Ryzen 9 7950X; WSL2
+Rust: nightly 1.102.0-nightly (3ef0c22cd 2026-11-11)
+Build: cargo +nightly build --release --locked --features offload_nightly_experimental,cutile --bin gpu_ingest
+Run: target/release/gpu_ingest --cpu 16 --cpu 32 --type u32 10000 100000 1000000
+Runtime experiment setting: LIBOMPTARGET_MEMORY_MANAGER_THRESHOLD=16777216
+Implementation: Retained radix with warp-aggregated histogram; automatic algorithm selection
+Method: end-to-end construction; >=1 second warmup, median of five samples, correctness checked against CPU
+WSL wgpu adapter below is software; offload and cuTile use the RTX 3060.
+
+adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32

@@ -71,6 +71,9 @@ cuda = ["shuffled_slices", "dep:cuda-core", "dep:cuda-device", "dep:cuda-host"]
 # `cargo` on stable Rust, but the CUDA toolkit (its `tileiras` compiler) must be installed where the
 # program runs, since cuTile compiles kernels on first use.
 cutile = ["shuffled_slices", "dep:cutile"]
+# Experimental NVIDIA/Linux backend using Rust's nightly GPU offload compiler.
+# See docs/offload.md for the toolchain, CUDA toolkit, and runtime requirements.
+offload_nightly_experimental = ["shuffled_slices"]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [

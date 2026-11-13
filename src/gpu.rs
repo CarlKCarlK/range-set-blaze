@@ -4,7 +4,8 @@ use core::cell::RefCell;
 use core::mem::size_of;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use core::num::NonZeroUsize;
-use std::sync::{Arc, Mutex, OnceLock, mpsc};
+use core::ptr::eq;
+use std::sync::{Arc, Mutex, OnceLock, PoisonError, mpsc};
 use std::vec::Vec;
 
 use lampshade::{Compactor, Context, KeyValueCompactor, KeyValueSoaSorter, Sorter};
@@ -29,6 +30,8 @@ mod cuda;
 #[cfg(feature = "cutile")]
 mod cutile;
 mod map_ingest;
+#[cfg(feature = "offload_nightly_experimental")]
+mod offload;
 
 const WORKGROUP_SIZE: u32 = 256;
 const BOUNDARY_32_SHADER: &str = r"
@@ -176,6 +179,8 @@ pub enum Engine {
     Cpu(NonZeroUsize),
     /// Sort and find the ranges on the GPU with portable wgpu compute shaders (Vulkan, Metal,
     /// DirectX 12), in one pass; only the ranges come back.
+    /// For 32-bit set keys, sorter pipelines and scratch workspace are retained between
+    /// calls. The input and endpoint buffers still belong to each call.
     ///
     /// For sets, [`Engine::Cpu`] with every thread was faster on the machines measured; for maps
     /// whose keys form few ranges, this engine was faster. Either way, it leaves the CPU free for
@@ -221,6 +226,25 @@ pub enum Engine {
     /// for.
     #[cfg(feature = "cutile")]
     CuTile,
+    /// Sort encoded keys on an NVIDIA GPU with Rust's nightly `std::offload` machinery,
+    /// then assemble ranges on the CPU. Maps preserve last-input-value precedence.
+    ///
+    /// Uses stable 8-bit radix sort above 1,024 keys and fused bitonic sort for smaller
+    /// inputs. Keys stay on the GPU during sorting; range assembly runs on the CPU.
+    ///
+    /// *Requires `offload_nightly_experimental`, Linux, and the toolchain described in
+    /// [the offload guide](https://github.com/CarlKCarlK/range-set-blaze/blob/gpu-on-simd/docs/offload.md).*
+    ///
+    /// # Panics
+    ///
+    /// Panics when no offload GPU is available, for unsupported key types (as with
+    /// [`Engine::Wgpu`]), or when the padded input exceeds 2³⁰ keys.
+    #[cfg(feature = "offload_nightly_experimental")]
+    Offload,
+    /// [`Engine::Offload`] when its types and device are available; otherwise
+    /// [`Engine::Cpu`] with every available thread. Runtime launch failures still fail.
+    #[cfg(feature = "offload_nightly_experimental")]
+    OffloadOrCpu,
 }
 
 fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
@@ -249,6 +273,20 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
         }
         #[cfg(feature = "cutile")]
         Engine::CuTile => from_slice_cutile(values),
+        #[cfg(feature = "offload_nightly_experimental")]
+        Engine::Offload | Engine::OffloadOrCpu => {
+            if T::KEY_WORDS == 0 || !offload::available() {
+                assert!(
+                    engine == Engine::OffloadOrCpu,
+                    "Engine::Offload: unsupported key type or no offload GPU is available"
+                );
+                return from_slice_cpu(values, all_threads());
+            }
+            let mut keys: Vec<u64> = values.iter().map(|value| value.encode()).collect();
+            offload::sort_bits(&mut keys, u32::from(T::KEY_WORDS) * 32);
+            let decoded: Vec<T> = keys.into_iter().map(T::decode).collect();
+            RangeSetBlaze::from_slice(&decoded)
+        }
     }
 }
 
@@ -386,7 +424,7 @@ fn try_gpu<T: GpuElement>(values: &[T]) -> Option<RangeSetBlaze<T>> {
 
 fn from_slice_gpu_with_context<T: GpuElement>(
     values: &[T],
-    context: &Context,
+    context: &'static Context,
 ) -> Option<RangeSetBlaze<T>> {
     if values.is_empty() {
         return Some(RangeSetBlaze::new());
@@ -420,6 +458,11 @@ fn with_error_scopes<R>(context: &Context, run: impl FnOnce() -> Option<R>) -> O
     let result = run();
     let validation_error = pollster::block_on(validation.pop());
     if pollster::block_on(out_of_memory.pop()).is_some() {
+        // A failed workspace allocation must not remain in the reusable sorter.
+        SORT_RESOURCES_32
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take();
         return None; // Out of GPU memory: the caller falls back to the CPU.
     }
     if let Some(error) = validation_error {
@@ -531,8 +574,43 @@ fn uses_mappable_primary_buffers(context: &Context) -> bool {
     should_use_mappable_primary_buffers(context.adapter_info.device_type, context.device.features())
 }
 
+/// Keep one device's pipelines and scratch workspace, shared across callers. The lock
+/// covers submission and readback so another call cannot overwrite in-flight scratch.
+/// The contexts are process-wide and static: their addresses cannot be recycled. Resource
+/// IDs alone are insufficient because separate wgpu instances can reuse the same IDs.
+struct SortResources32 {
+    context: &'static Context,
+    sorter: Sorter,
+    compactor: Compactor,
+}
+
+static SORT_RESOURCES_32: Mutex<Option<SortResources32>> = Mutex::new(None);
+
+fn with_sort_resources_32<R>(
+    context: &'static Context,
+    run: impl FnOnce(&mut Sorter, &mut Compactor) -> R,
+) -> R {
+    let mut cached = SORT_RESOURCES_32
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    if cached
+        .as_ref()
+        .is_none_or(|resources| !eq(resources.context, context))
+    {
+        *cached = Some(SortResources32 {
+            context,
+            sorter: Sorter::from_context(context),
+            compactor: Compactor::from_context(context),
+        });
+    }
+    let resources = cached.as_mut().expect("sort resources were initialized");
+    let result = run(&mut resources.sorter, &mut resources.compactor);
+    drop(cached);
+    result
+}
+
 fn normalize_32<T: GpuElement>(
-    context: &Context,
+    context: &'static Context,
     values: &[T],
     len: u32,
     gap: Option<(u64, u64)>,
@@ -567,14 +645,14 @@ fn normalize_32<T: GpuElement>(
         None => [len, groups_x(context, len)?, 0, 0],
     };
     let boundary = BoundaryKernel::new_32(context, &sorted, &buffers, &parameters);
-    let mut radix_sorter = Sorter::from_context(context);
-    let mut compactor = Compactor::from_context(context);
-    let mut encoder = encoder(context, "GPU range normalization");
-    resource_or_panic(radix_sorter.record_sort(&mut encoder, &input, &sorted, len))?;
-    boundary.record(&mut encoder);
-    record_compactions_32(&mut compactor, &mut encoder, &sorted, &buffers, len)?;
-    submit(context, encoder.finish())?;
-    read_endpoints_32(context, &buffers, len)
+    with_sort_resources_32(context, |sorter, compactor| {
+        let mut encoder = encoder(context, "GPU range normalization");
+        resource_or_panic(sorter.record_sort(&mut encoder, &input, &sorted, len))?;
+        boundary.record(&mut encoder);
+        record_compactions_32(compactor, &mut encoder, &sorted, &buffers, len)?;
+        submit(context, encoder.finish())?;
+        read_endpoints_32(context, &buffers, len)
+    })
 }
 
 fn normalize_64<T: GpuElement>(
@@ -1461,6 +1539,29 @@ mod tests {
     }
 
     #[test]
+    fn cached_32_bit_resources_handle_capacity_changes() {
+        for len in [17_u32, 4097, 3, 8193, 1, 257] {
+            let values: Vec<u32> = (0..len).rev().map(|key| key * 3).collect();
+            check(&values);
+        }
+    }
+
+    #[test]
+    fn cached_32_bit_resources_follow_context_identity() {
+        let (Some(primary), Some(test)) = (gpu_context(), test_context()) else {
+            return;
+        };
+        let values = [9_u32, 2, 1, 2, 3, u32::MAX];
+        let expected = RangeSetBlaze::from_slice(values);
+        for context in [primary, test, primary, test] {
+            assert_eq!(
+                from_slice_gpu_with_context(&values, context),
+                Some(expected.clone())
+            );
+        }
+    }
+
+    #[test]
     fn exact_64_bit_families() {
         check(&[
             0u64,
@@ -1665,6 +1766,13 @@ mod tests {
         #[cfg(feature = "cutile")]
         if gpu_capable && cutile::available() {
             engines.push(Engine::CuTile);
+        }
+        #[cfg(feature = "offload_nightly_experimental")]
+        {
+            engines.push(Engine::OffloadOrCpu);
+            if gpu_capable && offload::available() {
+                engines.push(Engine::Offload);
+            }
         }
         engines
     }

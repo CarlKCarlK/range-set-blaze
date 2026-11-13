@@ -73,7 +73,8 @@ jobs:
         if: matrix.suite == 'nightly-all-features'
         run: |
           cargo check --tests --features "float_nightly_experimental"
-          cargo test --verbose --all-features
+          # Preserve all existing feature coverage; offload has a separate newer-nightly job.
+          cargo test --verbose --features std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental,cuda,cutile
 
   docs_and_audit:
     name: Check docs and audit dependencies
@@ -94,7 +95,7 @@ jobs:
           tool: cargo-deadlinks,cargo-audit,cargo-deny
       - name: Check dead links in documentation
         run: |
-          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-10-12 doc --no-deps --all-features
+          DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-10-12 doc --no-deps --all-features
           RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
       - name: Audit dependencies (security & license)
         run: |
@@ -140,6 +141,30 @@ jobs:
         env:
           RANGE_SET_BLAZE_REQUIRE_TEST_GPU: "1"
         run: cargo test --verbose --features shuffled_slices --lib gpu -- --nocapture
+
+  gpu_offload:
+    name: Build Rust GPU offload and test CPU fallback
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install offload compiler components
+        run: rustup toolchain install nightly-2026-11-12 --component offload,llvm-tools,llvm-bitcode-linker,rust-src,clippy,rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: gpu-offload
+      - name: Extract the CUDA assembler without installing the full toolkit
+        run: |
+          sudo apt-get update
+          mkdir -p "$RUNNER_TEMP/offload-cuda"
+          cd "$RUNNER_TEMP/offload-cuda"
+          apt-get download nvidia-cuda-toolkit
+          dpkg-deb -x ./*.deb .
+          echo "$RUNNER_TEMP/offload-cuda/usr/lib/nvidia-cuda-toolkit/bin" >> "$GITHUB_PATH"
+      - name: Test offload feature without a GPU
+        run: |
+          rustfmt +nightly-2026-11-12 --check --edition 2024 src/gpu/offload/native.rs
+          cargo +nightly-2026-11-12 test --features offload_nightly_experimental --lib gpu
+          cargo +nightly-2026-11-12 clippy --all-targets --features offload_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
   test_32_bit_linux:
     name: Test on 32-bit Ubuntu
