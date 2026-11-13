@@ -7,6 +7,7 @@
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
 //! empty when there is no hardware GPU. With the `cuda` feature, a `cuda_ms` column times
 //! `Engine::Cuda`; with the `cutile` feature, a `cutile_ms` column times `Engine::CuTile`.
+//! With `offload_nightly_experimental`, `offload_ms` times `Engine::Offload`.
 //!
 //! Each type gets data built within its own range of values, in two workloads:
 //!
@@ -77,7 +78,7 @@ fn main() {
         write!(cpu_columns, ",cpu_{count}_ms").expect("writing to a String can't fail");
     }
     println!(
-        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms,cutile_ms"
+        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms,cutile_ms,offload_ms"
     );
     for n in sizes {
         for workload in [Workload::Distinct, Workload::Duplicates] {
@@ -185,7 +186,7 @@ impl Run<'_> {
         };
         let order = if self.shuffle { "shuffled" } else { "in_order" };
         let Some((values, distinct)) = self.values::<T>() else {
-            let empty = ",".repeat(self.thread_counts.len() + 6);
+            let empty = ",".repeat(self.thread_counts.len() + 7);
             println!("{workload},{order},{},{},n/a{empty}", T::NAME, self.n);
             return;
         };
@@ -214,8 +215,12 @@ impl Run<'_> {
         let cutile = Some(shuffled(Engine::CuTile));
         #[cfg(not(feature = "cutile"))]
         let cutile: Option<Duration> = None;
+        #[cfg(feature = "offload_nightly_experimental")]
+        let offload = Some(shuffled(Engine::Offload));
+        #[cfg(not(feature = "offload_nightly_experimental"))]
+        let offload: Option<Duration> = None;
         println!(
-            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{},{}",
+            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{},{},{}",
             T::NAME,
             values.len(),
             distinct,
@@ -225,6 +230,10 @@ impl Run<'_> {
             gpu.map_or_else(String::new, |gpu| format!("{:.3}", milliseconds(gpu))),
             cuda.map_or_else(String::new, |cuda| format!("{:.3}", milliseconds(cuda))),
             cutile.map_or_else(String::new, |cutile| format!("{:.3}", milliseconds(cutile))),
+            offload.map_or_else(String::new, |offload| format!(
+                "{:.3}",
+                milliseconds(offload)
+            )),
         );
     }
 

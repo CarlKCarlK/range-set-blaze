@@ -1,0 +1,12 @@
+Benchmark date: 2026-11-13 (America/Los_Angeles)
+GPU used by offload and cuTile: NVIDIA GeForce RTX 3060 (sm_86), WSL2
+CPU: AMD Ryzen 9 7950X, 32 logical processors
+Compiler: rustc 1.102.0-nightly (3ef0c22cd 2026-11-11)
+Build: cargo +nightly build --release --locked --features offload_nightly_experimental,cutile --bin gpu_ingest
+Command: RANGE_SET_BLAZE_REQUIRE_OFFLOAD_GPU=1 target/release/gpu_ingest --cpu 16 --cpu 32 --type u32 10000 100000 1000000
+Method: end-to-end construction; correctness checked against CPU; median of five timed samples after at least one second of warm-up. Set input cloning is outside the timer.
+Implementation: Persistent device allocation and fused block-local bitonic passes.
+The wgpu adapter below is software, so wgpu timing columns are empty. Offload GPU execution was mandatory.
+
+adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32

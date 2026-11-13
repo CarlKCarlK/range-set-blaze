@@ -73,6 +73,11 @@ fn check_all() -> ExitCode {
             vec!["test-nightly".to_string()],
         ),
         (
+            "just test-offload".to_string(),
+            "just".to_string(),
+            vec!["test-offload".to_string()],
+        ),
+        (
             "just msrv-check".to_string(),
             "just".to_string(),
             vec!["msrv-check".to_string()],

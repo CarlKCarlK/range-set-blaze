@@ -98,6 +98,8 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
         Engine::Cuda | Engine::CudaOrCpu => all_threads(),
         #[cfg(feature = "cutile")]
         Engine::CuTile => all_threads(),
+        #[cfg(feature = "offload_nightly_experimental")]
+        Engine::Offload | Engine::OffloadOrCpu => all_threads(),
     };
     // Only work that needs no `V: Sync` runs on the pool: keys, and values once they are words.
     let pool = thread_pool(threads);
@@ -157,8 +159,62 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
             };
             ranges_cutile(&pool, key_words, value_words)
         }
+        #[cfg(feature = "offload_nightly_experimental")]
+        Engine::Offload | Engine::OffloadOrCpu => ranges_offload(
+            &pool,
+            keys,
+            values,
+            key_words.as_ref(),
+            value_words.as_ref(),
+            engine,
+        ),
     };
     build_map(&pool, values, found)
+}
+
+/// GPU-sort packed (key, input position) words, then reuse CPU range assembly.
+#[cfg(feature = "offload_nightly_experimental")]
+fn ranges_offload<K: Integer, V: Eq>(
+    pool: &ThreadPool,
+    keys: &[K],
+    values: &[V],
+    key_words: Option<&KeyWords<'_>>,
+    value_words: Option<&ValueWords<'_>>,
+    engine: Engine,
+) -> Found<K> {
+    let Some(key_words) = key_words.filter(|_| super::offload::available()) else {
+        assert!(
+            engine == Engine::OffloadOrCpu,
+            "Engine::Offload: unsupported key type or no offload GPU is available"
+        );
+        return ranges_cpu(pool, keys, values, key_words, value_words);
+    };
+    let mut packed = Packed {
+        entries: pool.install(|| {
+            key_words
+                .words
+                .par_iter()
+                .enumerate()
+                .map(|(position, &word)| u64::from(word) << 32 | position as u64)
+                .collect()
+        }),
+        gap: key_words.gap,
+    };
+    super::offload::sort(&mut packed.entries);
+    let ranges = value_words.map_or_else(
+        || ranges_sequential(&packed, |left, right| values[left] == values[right]),
+        |words| pool.install(|| ranges_parallel(&packed, |left, right| words.same(left, right))),
+    );
+    let (bounds, firsts) = ranges
+        .into_iter()
+        .map(|(first, last)| {
+            (
+                (packed.key(first), packed.key(last)),
+                packed.position(first),
+            )
+        })
+        .unzip();
+    Found::Words(Ranges { bounds, firsts })
 }
 
 /// The ranges, from CUDA, if the key and value types have words and CUDA can run.
@@ -990,6 +1046,13 @@ mod tests {
         #[cfg(feature = "cutile")]
         if gpu_capable && super::super::cutile::available() {
             engines.push(Engine::CuTile);
+        }
+        #[cfg(feature = "offload_nightly_experimental")]
+        {
+            engines.push(Engine::OffloadOrCpu);
+            if gpu_capable && super::super::offload::available() {
+                engines.push(Engine::Offload);
+            }
         }
         engines
     }
