@@ -26,15 +26,19 @@ CPU time divided by GPU time; values above 1 mean the GPU was faster.
 | --- | --- | --- | ---: | ---: | ---: |
 | RTX 3060 desktop, Windows Vulkan | Distinct, shuffled | wgpu | 2.287 (32) | 2.771 | 0.83 |
 | RTX 3060 desktop, Windows Vulkan | Duplicates, shuffled | wgpu | 3.009 (16) | 2.525 | 1.19 |
+| Radeon 8060S laptop, Windows Vulkan | Distinct, shuffled | wgpu | 3.643 (32) | 6.104 | 0.60 |
+| Radeon 8060S laptop, Windows Vulkan | Duplicates, shuffled | wgpu | 4.440 (16) | 5.885 | 0.75 |
 | Radeon 8060S laptop, WSL2 Dozen | Distinct, shuffled | wgpu | 3.943 (16) | 19.491 | 0.20 |
 | Radeon 8060S laptop, WSL2 Dozen | Duplicates, shuffled | wgpu | 3.604 (16) | 19.194 | 0.19 |
 | RTX 3060 desktop, WSL2 | Distinct, shuffled | offload radix | 3.164 (16) | 11.261 | 0.28 |
 | RTX 3060 desktop, WSL2 | Duplicates, shuffled | offload radix | 3.515 (16) | 17.429 | 0.20 |
 
-The native Windows Radeon run is in progress. Its result is needed before
-attributing the laptop's WSL2 numbers to the GPU rather than the Dozen
-translation path. The WSL2 adapter was verified as hardware, not llvmpipe.
-Its Windows driver is `32.0.22050.4002`; Dozen is the existing Mesa 25.2.8 build.
+The laptop's Windows wgpu distinct-key time was about 3.2 times faster than
+its WSL2 Dozen result. Both paths used hardware acceleration. That difference
+is a reason to retain native controls when investigating integrated GPU
+performance under WSL2. Neither GPU result beat its own CPU for these laptop
+workloads. The Windows driver is `32.0.22050.4002`; Dozen is the existing
+Mesa 25.2.8 build.
 
 Sorted inputs are retained in the CSV files. Direct `from_slice` is much
 faster on those inputs: for distinct keys it took 0.083 ms on Windows desktop,
@@ -55,18 +59,20 @@ Runs use 20 samples, one-second warmup, and two-second measurement time per
 series. Values below are Criterion slope estimates with 95 percent confidence
 intervals, in microseconds.
 
-| Series | Desktop 7950X, WSL2 | 95 percent interval |
-| --- | ---: | ---: |
-| `from_iter` | 853.625 | 845.593–859.614 |
-| Scalar fallback | 179.534 | 178.358–181.094 |
-| SSE2 | 111.484 | 108.661–116.920 |
-| SSE4.2 | 110.096 | 106.783–113.961 |
-| AVX2 | 91.960 | 90.979–92.978 |
-| AVX-512 | 95.740 | 95.032–96.687 |
-| Automatic dispatch (AVX-512) | 94.751 | 94.528–94.957 |
+| Series | Desktop 7950X, WSL2 | 95 percent interval | Laptop Max+ PRO 395, WSL2 | 95 percent interval |
+| --- | ---: | ---: | ---: | ---: |
+| `from_iter` | 853.625 | 845.593–859.614 | 801.901 | 798.606–805.462 |
+| Scalar fallback | 179.534 | 178.358–181.094 | 141.603 | 140.945–142.424 |
+| SSE2 | 111.484 | 108.661–116.920 | 94.231 | 93.606–94.841 |
+| SSE4.2 | 110.096 | 106.783–113.961 | 92.220 | 91.695–92.869 |
+| AVX2 | 91.960 | 90.979–92.978 | 70.756 | 70.307–71.127 |
+| AVX-512 | 95.740 | 95.032–96.687 | 79.091 | 78.365–79.953 |
+| Automatic dispatch (AVX-512) | 94.751 | 94.528–94.957 | 79.294 | 78.883–79.704 |
 
 The scalar series disables explicit SIMD dispatch; LLVM may still
-auto-vectorize it. AMD SIMD measurements are pending.
+auto-vectorize it. AVX2 was faster than AVX-512 for this particular clump
+distribution on both machines. That single workload is insufficient to
+change the general dispatch policy.
 
 ```sh
 cargo +1.99.1 bench --locked --bench bench -- '^ingest_clumps_simd_levels_u32/.*/1000$' --warm-up-time 1 --measurement-time 2
@@ -76,8 +82,12 @@ cargo +1.99.1 bench --locked --bench bench -- '^ingest_clumps_simd_levels_u32/.*
 
 - [Desktop Windows ingestion CSV](results/wgpu_matched_sets_rtx3060_windows_20261113.csv)
 - [Desktop WSL2 offload CSV](results/offload_matched_sets_rtx3060_wsl_20261113.csv)
+- [AMD Windows ingestion CSV](results/wgpu_cached_sets_radeon8060s_windows_vulkan_20261113.csv)
+- [AMD WSL2 Dozen ingestion CSV](results/wgpu_cached_sets_radeon8060s_wsl_dozen_20261113.csv)
 - [Desktop SIMD CSV](results/simd_clumps1000_u32_7950x_wsl_20261113.csv)
 - [Desktop SIMD estimate JSON](results/simd_clumps1000_u32_7950x_wsl_20261113.json)
+- [AMD SIMD CSV](results/simd_clumps1000_u32_radeon8060s_wsl_20261113.csv)
+- [AMD SIMD estimate JSON](results/simd_clumps1000_u32_radeon8060s_wsl_20261113.estimates.json)
 - [AMD coordination and results](https://github.com/CarlKCarlK/range-set-blaze/pull/39)
 
 Adjacent logs record commands, source revisions, adapters, and toolchains.

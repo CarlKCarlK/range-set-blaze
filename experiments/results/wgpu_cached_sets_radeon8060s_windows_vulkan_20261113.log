@@ -1,0 +1,41 @@
+Date: 2026-11-13 America/Los_Angeles
+Machine: HP ZBook Ultra G1a14; Ryzen AI Max+ PRO395,16cores32threads; Radeon8060S;128GB unifiedLPDDR5X
+Source: merge8cb9dd213771e3f81bea776fbe592faf417b66bf including desktopimplementationaa4c21a76d1263d3d31008b8109b73bcf4b7c211; handoff-document-only edit present
+Environment: native Windows, launched from WSL2 over SSH; WGPU_BACKEND=vulkan
+Build: cargo +1.99.1 build --release --locked --features shuffled_slices --bin gpu_ingest --manifest-path [source]\Cargo.toml
+Run: gpu_ingest.exe --cpu 16 --cpu 32 --type u32 1000000
+Implementation: cached32-bit wgpu sorter/compactor; portable release build; no target-cpu=native
+Method: end-to-end construction;>=1second warmup,medianoffivesamples; correctnessassertions; CPU/GPU measurements sequential; broad correctness suite deferred; benchmark assertions enabled
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+
+
+Caption     : Microsoft Windows 11 Pro
+Version     : 10.0.26200
+BuildNumber : 26200
+
+
+
+
+
+
+Name          : Microsoft Remote Display Adapter
+DriverVersion : 10.0.26100.9818
+
+Name          : AMD Radeon(TM) 8060S Graphics
+DriverVersion : 32.0.22050.4002
+
+
+
+
+Power Scheme GUID: fb5220ff-7e1a-47aa-9a42-50ffbf45c673  (HP Optimized (Modern Standby))
+
+
+PowerOnline : True
+Charging    : False
+Discharging : False
+
+
+
+
+adapter="AMD Radeon(TM) 8060S Graphics" backend=Vulkan device_type=IntegratedGpu
+available threads=32
