@@ -4,7 +4,6 @@ use core::cell::RefCell;
 use core::mem::size_of;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use core::num::NonZeroUsize;
-use core::ptr::eq;
 use std::sync::{Arc, Mutex, OnceLock, PoisonError, mpsc};
 use std::vec::Vec;
 
@@ -179,8 +178,6 @@ pub enum Engine {
     Cpu(NonZeroUsize),
     /// Sort and find the ranges on the GPU with portable wgpu compute shaders (Vulkan, Metal,
     /// DirectX 12), in one pass; only the ranges come back.
-    /// For 32-bit set keys, sorter pipelines and scratch workspace are retained between
-    /// calls. The input and endpoint buffers still belong to each call.
     ///
     /// For sets, [`Engine::Cpu`] with every thread was faster on the machines measured; for maps
     /// whose keys form few ranges, this engine was faster. Either way, it leaves the CPU free for
@@ -419,9 +416,7 @@ fn sort_in_place<T: Ord + Send>(values: &mut [T], threads: NonZeroUsize) {
 /// repeated calls don't pay to start threads.
 fn thread_pool(threads: NonZeroUsize) -> Arc<rayon::ThreadPool> {
     static POOLS: Mutex<Vec<(NonZeroUsize, Arc<rayon::ThreadPool>)>> = Mutex::new(Vec::new());
-    let mut pools = POOLS
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut pools = POOLS.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some((_, pool)) = pools.iter().find(|(count, _)| *count == threads) {
         return Arc::clone(pool);
     }
@@ -477,11 +472,6 @@ fn with_error_scopes<R>(context: &Context, run: impl FnOnce() -> Option<R>) -> O
     let result = run();
     let validation_error = pollster::block_on(validation.pop());
     if pollster::block_on(out_of_memory.pop()).is_some() {
-        // A failed workspace allocation must not remain in the reusable sorter.
-        SORT_RESOURCES_32
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .take();
         return None; // Out of GPU memory: the caller falls back to the CPU.
     }
     if let Some(error) = validation_error {
@@ -593,41 +583,6 @@ fn uses_mappable_primary_buffers(context: &Context) -> bool {
     should_use_mappable_primary_buffers(context.adapter_info.device_type, context.device.features())
 }
 
-/// Keep one device's pipelines and scratch workspace, shared across callers. The lock
-/// covers submission and readback so another call cannot overwrite in-flight scratch.
-/// The contexts are process-wide and static: their addresses cannot be recycled. Resource
-/// IDs alone are insufficient because separate wgpu instances can reuse the same IDs.
-struct SortResources32 {
-    context: &'static Context,
-    sorter: Sorter,
-    compactor: Compactor,
-}
-
-static SORT_RESOURCES_32: Mutex<Option<SortResources32>> = Mutex::new(None);
-
-fn with_sort_resources_32<R>(
-    context: &'static Context,
-    run: impl FnOnce(&mut Sorter, &mut Compactor) -> R,
-) -> R {
-    let mut cached = SORT_RESOURCES_32
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner);
-    if cached
-        .as_ref()
-        .is_none_or(|resources| !eq(resources.context, context))
-    {
-        *cached = Some(SortResources32 {
-            context,
-            sorter: Sorter::from_context(context),
-            compactor: Compactor::from_context(context),
-        });
-    }
-    let resources = cached.as_mut().expect("sort resources were initialized");
-    let result = run(&mut resources.sorter, &mut resources.compactor);
-    drop(cached);
-    result
-}
-
 fn normalize_32<T: GpuElement>(
     context: &'static Context,
     values: &[T],
@@ -664,14 +619,16 @@ fn normalize_32<T: GpuElement>(
         None => [len, groups_x(context, len)?, 0, 0],
     };
     let boundary = BoundaryKernel::new_32(context, &sorted, &buffers, &parameters);
-    with_sort_resources_32(context, |sorter, compactor| {
-        let mut encoder = encoder(context, "GPU range normalization");
-        resource_or_panic(sorter.record_sort(&mut encoder, &input, &sorted, len))?;
-        boundary.record(&mut encoder);
-        record_compactions_32(compactor, &mut encoder, &sorted, &buffers, len)?;
-        submit(context, encoder.finish())?;
-        read_endpoints_32(context, &buffers, len)
-    })
+    // Each call builds its own sorter and compactor, with their scratch workspace, as every
+    // engine allocates its working memory per call, so benchmarks compare engines fairly.
+    let mut radix_sorter = Sorter::from_context(context);
+    let mut compactor = Compactor::from_context(context);
+    let mut encoder = encoder(context, "GPU range normalization");
+    resource_or_panic(radix_sorter.record_sort(&mut encoder, &input, &sorted, len))?;
+    boundary.record(&mut encoder);
+    record_compactions_32(&mut compactor, &mut encoder, &sorted, &buffers, len)?;
+    submit(context, encoder.finish())?;
+    read_endpoints_32(context, &buffers, len)
 }
 
 fn normalize_64<T: GpuElement>(
@@ -1558,7 +1515,7 @@ mod tests {
     }
 
     #[test]
-    fn cached_32_bit_resources_handle_capacity_changes() {
+    fn sort_resources_handle_capacity_changes() {
         for len in [17_u32, 4097, 3, 8193, 1, 257] {
             let values: Vec<u32> = (0..len).rev().map(|key| key * 3).collect();
             check(&values);
@@ -1566,7 +1523,7 @@ mod tests {
     }
 
     #[test]
-    fn cached_32_bit_resources_follow_context_identity() {
+    fn sort_resources_follow_context_identity() {
         let (Some(primary), Some(test)) = (gpu_context(), test_context()) else {
             return;
         };

@@ -904,12 +904,12 @@ mod tests {
             backends: wgpu::Backends::PRIMARY,
             ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
-        let Ok(adapter) = pollster::block_on(instance.request_adapter(
-            &wgpu::RequestAdapterOptions {
+        let Ok(adapter) =
+            pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 ..Default::default()
-            },
-        )) else {
+            }))
+        else {
             return false;
         };
         let info = adapter.get_info();
