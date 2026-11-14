@@ -878,17 +878,42 @@ fn milliseconds(duration: Duration) -> f64 {
 mod tests {
     use super::*;
 
-    /// One GPU context for all tests (creating devices is slow); `None` if there is no adapter.
+    /// One GPU context for all tests (creating devices is slow); `None` if there is no
+    /// usable adapter.
     fn context() -> Option<&'static (Context, Kernels)> {
         static CONTEXT: std::sync::OnceLock<Option<(Context, Kernels)>> =
             std::sync::OnceLock::new();
         CONTEXT
             .get_or_init(|| {
+                if !test_adapter_is_usable() {
+                    return None;
+                }
                 let context = pollster::block_on(Context::init()).ok()?;
                 let kernels = Kernels::new(&context);
                 Some((context, kernels))
             })
             .as_ref()
+    }
+
+    /// Lampshade's `Context::init` creates a device on whatever adapter wgpu picks. On a
+    /// GPU-less Windows runner that is WARP, where creating the device crashes the process
+    /// (`STATUS_ACCESS_VIOLATION`). Like the library's test context (src/gpu.rs), accept
+    /// hardware adapters and software Vulkan (lavapipe), checking before any device exists.
+    fn test_adapter_is_usable() -> bool {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::PRIMARY,
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
+        });
+        let Ok(adapter) = pollster::block_on(instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                ..Default::default()
+            },
+        )) else {
+            return false;
+        };
+        let info = adapter.get_info();
+        info.device_type != wgpu::DeviceType::Cpu || info.backend == wgpu::Backend::Vulkan
     }
 
     /// The GPU result must equal both CPU constructors.
