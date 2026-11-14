@@ -162,9 +162,18 @@ path = "experiments/gpu_sort_benchmark.rs"
 required-features = ["shuffled_slices"]
 
 [package.metadata.docs.rs]
-# Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the
-# feature required by each gated item.
-all-features = true
+# Publish the optional APIs. Rustdoc's `doc_cfg` annotations identify the
+# feature required by each gated item. Not `all-features`: `cutile` needs a
+# CUDA toolkit at build time and `offload_nightly_experimental` needs a newer
+# nightly with the offload component, neither of which docs.rs provides.
+features = [
+    "std",
+    "from_slice",
+    "shuffled_slices",
+    "float_nightly_experimental",
+    "cursor_nightly_experimental",
+    "cuda",
+]
 
 ###############################################################################
 # Global lint levels (stable since Rust 1.77; on older nightly use
