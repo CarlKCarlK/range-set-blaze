@@ -1,0 +1,6 @@
+Benchmark date: 2026-11-13
+GPU: AMD Radeon 8060S (gfx1151), WSL2; CPU Ryzen AI Max+ PRO 395
+Compiler: rustc 1.102.0-nightly (3ef0c22cd 2026-11-11)
+Build: cargo +nightly-2026-11-12 build --release --locked --features offload_nightly_experimental --bin gpu_ingest
+Run: gpu_ingest --cpu 32 --type u32 10000000 100000000
+Offload: 32-bit keys for u32-sized types, GPU radix sort and GPU range finding; only ranges download.
