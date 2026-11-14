@@ -71,3 +71,34 @@ pub(super) unsafe fn add_shared(pointer: *mut u32, increment: u32) {
             pointer = in(reg64) pointer as u64, increment = in(reg32) increment, options(nostack));
     }
 }
+
+/// A release store visible to every thread on this GPU. Rust's `Ordering::Release`
+/// compiles to a system-scope fence on NVPTX, which also orders against the host and
+/// was radix_scatter's largest stall (Nsight Compute `membar`); look-back only needs GPU scope.
+///
+/// # Safety
+/// pointer must name an aligned u64 in global memory that other threads access only
+/// through these GPU-scope operations or atomics.
+#[inline(always)]
+pub(super) unsafe fn store_release_gpu(pointer: *mut u64, value: u64) {
+    // SAFETY: the caller provides an aligned global word; sm_70+ supports st.release.
+    unsafe {
+        asm!("st.release.gpu.u64 [{pointer}], {value};",
+            pointer = in(reg64) pointer as u64, value = in(reg64) value, options(nostack));
+    }
+}
+
+/// An acquire load paired with [`store_release_gpu`].
+///
+/// # Safety
+/// As for [`store_release_gpu`].
+#[inline(always)]
+pub(super) unsafe fn load_acquire_gpu(pointer: *const u64) -> u64 {
+    let value: u64;
+    // SAFETY: the caller provides an aligned global word; sm_70+ supports ld.acquire.
+    unsafe {
+        asm!("ld.acquire.gpu.u64 {value}, [{pointer}];",
+            value = out(reg64) value, pointer = in(reg64) pointer as u64, options(nostack));
+    }
+    value
+}

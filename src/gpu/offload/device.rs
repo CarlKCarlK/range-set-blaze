@@ -5,7 +5,9 @@
 //! assume 32 lanes: NVIDIA warps, and AMD RDNA wave32 (the LLVM default for gfx10+).
 
 #[cfg(target_arch = "nvptx64")]
-pub(super) use super::ptx::{add_shared, match_any, shared, shuffle_up, sync_warp};
+pub(super) use super::ptx::{
+    add_shared, load_acquire_gpu, match_any, shared, shuffle_up, store_release_gpu, sync_warp,
+};
 #[cfg(target_arch = "nvptx64")]
 pub(super) use core::arch::nvptx::{
     _block_dim_x as block_dim_x, _block_idx_x as block_idx_x, _syncthreads as sync_block,
@@ -21,7 +23,7 @@ pub(super) use core::arch::amdgpu::{workgroup_id_x as block_idx_x, workitem_id_x
 #[cfg(target_arch = "amdgpu")]
 use core::intrinsics::gpu::gpu_launch_sized_workgroup_mem;
 #[cfg(target_arch = "amdgpu")]
-use core::sync::atomic::{AtomicU32, Ordering, fence};
+use core::sync::atomic::{AtomicU32, AtomicU64, Ordering, fence};
 
 #[cfg(target_arch = "amdgpu")]
 pub(super) const fn block_dim_x() -> u32 {
@@ -113,4 +115,28 @@ pub(super) unsafe fn add_shared(pointer: *mut u32, increment: u32) {
     // SAFETY: the caller provides an aligned counter that only atomics update until
     // the following block barrier.
     unsafe { AtomicU32::from_ptr(pointer) }.fetch_add(increment, Ordering::Relaxed);
+}
+
+/// A release store other workgroups observe through [`load_acquire_gpu`]. AMD keeps
+/// Rust's standard orderings; NVIDIA uses GPU-scope PTX (see `ptx.rs`).
+///
+/// # Safety
+/// pointer must name an aligned u64 in global memory that other threads access only
+/// through these operations or atomics.
+#[cfg(target_arch = "amdgpu")]
+#[inline(always)]
+pub(super) unsafe fn store_release_gpu(pointer: *mut u64, value: u64) {
+    // SAFETY: the caller provides an aligned word accessed only atomically.
+    unsafe { AtomicU64::from_ptr(pointer) }.store(value, Ordering::Release);
+}
+
+/// An acquire load paired with [`store_release_gpu`].
+///
+/// # Safety
+/// As for [`store_release_gpu`].
+#[cfg(target_arch = "amdgpu")]
+#[inline(always)]
+pub(super) unsafe fn load_acquire_gpu(pointer: *mut u64) -> u64 {
+    // SAFETY: the caller provides an aligned word accessed only atomically.
+    unsafe { AtomicU64::from_ptr(pointer) }.load(Ordering::Acquire)
 }

@@ -1,0 +1,7 @@
+Benchmark date: 2026-11-13
+GPU: NVIDIA GeForce RTX 3060 (sm_86), WSL2; CPU Ryzen 9 7950X
+Build: cargo +nightly-2026-11-12 build --release --locked --features offload_nightly_experimental --bin gpu_ingest
+Run: gpu_ingest --cpu 16 --cpu 32 --type u32 100000000
+Change: radix_scatter look-back uses st.release.gpu / ld.acquire.gpu instead of system-scope Release/Acquire.
+Nsight Compute, radix_scatter per pass: 14.6 ms -> 8.9-9.5 ms; membar stall 13.6 -> 0.5 cycles per issued instruction.
+End-to-end is noisy run to run: two more runs gave offload 213.0/185.7 ms distinct and 173.2/167.7 ms duplicates.

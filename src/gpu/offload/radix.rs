@@ -239,21 +239,24 @@ pub(super) fn radix_scatter<K: Key>(
         }
     }
     // Look back: the count of digit `tid` in all tiles before this one.
-    // SAFETY: each (tile, digit) names one aligned, reset status word. Only this
-    // ticket's block publishes it; other blocks access it through acquire loads.
-    let slot =
-        |tile: u32| unsafe { AtomicU64::from_ptr(status.add(1 + (tile * RADIX + tid) as usize)) };
+    // SAFETY: each (tile, digit) names one aligned, reset status word in the resident
+    // workspace. Only this ticket's block publishes it, with GPU-scope release stores;
+    // other blocks read it with GPU-scope acquire loads.
+    let slot = |tile: u32| unsafe { status.add(1 + (tile * RADIX + tid) as usize) };
     let prefix = if tile == 0 {
         0
     } else {
-        slot(tile).store(AGGREGATE | u64::from(total), Ordering::Release);
+        // SAFETY: see slot above.
+        unsafe { device::store_release_gpu(slot(tile), AGGREGATE | u64::from(total)) };
         let mut prefix = 0;
         let mut previous = tile;
         loop {
             previous -= 1;
-            let mut word = slot(previous).load(Ordering::Acquire);
+            // SAFETY: see slot above.
+            let mut word = unsafe { device::load_acquire_gpu(slot(previous)) };
             while word & READY == 0 {
-                word = slot(previous).load(Ordering::Acquire);
+                // SAFETY: see slot above.
+                word = unsafe { device::load_acquire_gpu(slot(previous)) };
             }
             prefix += word as u32;
             if word & INCLUSIVE != 0 {
@@ -262,7 +265,8 @@ pub(super) fn radix_scatter<K: Key>(
         }
         prefix
     };
-    slot(tile).store(INCLUSIVE | u64::from(prefix + total), Ordering::Release);
+    // SAFETY: see slot above.
+    unsafe { device::store_release_gpu(slot(tile), INCLUSIVE | u64::from(prefix + total)) };
     // SAFETY: tid owns this digit's start. Histogram totals bound all prefixes by len
     // (at most 2^30), so converting the u64 histogram prefix to u32 is exact.
     unsafe {
