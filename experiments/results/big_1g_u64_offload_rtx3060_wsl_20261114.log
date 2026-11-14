@@ -1,0 +1,4 @@
+Benchmark date: 2026-11-14
+Machine: Ryzen 9 7950X, RTX 3060 12 GB, WSL2 (62 GB RAM)
+Run: gpu_ingest --quick --cpu 16 --type u64 1073741824 (features offload_nightly_experimental; RANGE_SET_BLAZE_REQUIRE_OFFLOAD_GPU=1)
+Engine::Offload needs about 16 GB of GPU memory here, more than the card has; Windows (WDDM) pages the excess to system RAM, so it runs, slowly.

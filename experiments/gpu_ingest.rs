@@ -1,8 +1,10 @@
 //! Benchmarks `from_slice` against `from_shuffled_slice` with each `Engine`, on the same data.
 //!
 //! Usage:
-//! `cargo run --release --features shuffled_slices --bin gpu_ingest -- [--cpu N]... [--type T]... [SIZES...]`
-//! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column and, at the end of
+//! `cargo run --release --features shuffled_slices --bin gpu_ingest -- [--quick] [--cpu N]... [--type T]... [SIZES...]`
+//! (default size: 1,000,000). `--quick` runs only the duplicates workload, shuffled, skips
+//! the single-threaded columns (`from_slice`, `Cpu(1)`, `CpuRadix(1)`), and takes the median
+//! of 3 samples instead of 5, for very large inputs. Each `--cpu N` adds an `Engine::Cpu(N)` column and, at the end of
 //! the row, an `Engine::CpuRadix(N)` column; the default is every available thread.
 //! `Engine::Cpu(1)` and `Engine::CpuRadix(1)` are always included. Each `--type T` (such as `u32`)
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
@@ -41,9 +43,12 @@ fn main() {
     let mut sizes: Vec<u64> = Vec::new();
     let mut thread_counts: Vec<NonZeroUsize> = Vec::new();
     let mut types: Vec<String> = Vec::new();
+    let mut quick = false;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
-        if arg == "--cpu" {
+        if arg == "--quick" {
+            quick = true;
+        } else if arg == "--cpu" {
             let count = args.next().expect("--cpu needs a thread count");
             thread_counts.push(
                 count
@@ -85,13 +90,20 @@ fn main() {
         "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms,cutile_ms,offload_ms,cpu_radix_1_ms{radix_columns},hip_ms"
     );
     for n in sizes {
-        for workload in [Workload::Distinct, Workload::Duplicates] {
-            for shuffle in [true, false] {
+        let workloads: &[Workload] = if quick {
+            &[Workload::Duplicates]
+        } else {
+            &[Workload::Distinct, Workload::Duplicates]
+        };
+        let orders: &[bool] = if quick { &[true] } else { &[true, false] };
+        for &workload in workloads {
+            for &shuffle in orders {
                 let run = Run {
                     n,
                     workload,
                     shuffle,
                     has_gpu,
+                    quick,
                     thread_counts: &thread_counts,
                     types: &types,
                 };
@@ -175,6 +187,8 @@ struct Run<'a> {
     workload: Workload,
     shuffle: bool,
     has_gpu: bool,
+    /// Skip the single-threaded columns and take 3 samples instead of 5.
+    quick: bool,
     thread_counts: &'a [NonZeroUsize],
     types: &'a [String],
 }
@@ -194,23 +208,38 @@ impl Run<'_> {
             println!("{workload},{order},{},{},n/a{empty}", T::NAME, self.n);
             return;
         };
-        let expected = RangeSetBlaze::from_slice(&values);
-        let from_slice = median(|| (), |()| RangeSetBlaze::from_slice(black_box(&values)));
+        let samples = if self.quick { 3 } else { 5 };
+        // Quick runs skip the single-threaded `from_slice`, so the multithreaded comparison
+        // sort supplies the reference result instead.
+        let expected = if self.quick {
+            let all = std::thread::available_parallelism().unwrap_or(NonZeroUsize::MIN);
+            T::shuffled(&mut values.clone(), Engine::Cpu(all))
+        } else {
+            RangeSetBlaze::from_slice(&values)
+        };
+        let from_slice = (!self.quick).then(|| {
+            median(
+                samples,
+                || (),
+                |()| RangeSetBlaze::from_slice(black_box(&values)),
+            )
+        });
         let shuffled = |engine: Engine| {
             let mut check = values.clone();
             assert_eq!(T::shuffled(&mut check, engine), expected, "{engine:?}");
             median(
+                samples,
                 || values.clone(),
                 |mut copy| T::shuffled(black_box(&mut copy), engine),
             )
         };
-        let cpu_1 = shuffled(Engine::Cpu(NonZeroUsize::MIN));
+        let cpu_1 = (!self.quick).then(|| shuffled(Engine::Cpu(NonZeroUsize::MIN)));
         let mut cpu_many = String::new();
         for &count in self.thread_counts {
             let elapsed = milliseconds(shuffled(Engine::Cpu(count)));
             write!(cpu_many, ",{elapsed:.3}").expect("writing to a String can't fail");
         }
-        let radix_1 = shuffled(Engine::CpuRadix(NonZeroUsize::MIN));
+        let radix_1 = (!self.quick).then(|| shuffled(Engine::CpuRadix(NonZeroUsize::MIN)));
         let mut radix_many = String::new();
         for &count in self.thread_counts {
             let elapsed = milliseconds(shuffled(Engine::CpuRadix(count)));
@@ -234,13 +263,13 @@ impl Run<'_> {
         #[cfg(not(feature = "offload_nightly_experimental"))]
         let offload: Option<Duration> = None;
         println!(
-            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{},{},{},{:.3}{radix_many},{}",
+            "{workload},{order},{},{},{},{},{},{}{cpu_many},{},{},{},{},{}{radix_many},{}",
             T::NAME,
             values.len(),
             distinct,
             expected.ranges_len(),
-            milliseconds(from_slice),
-            milliseconds(cpu_1),
+            cell(from_slice),
+            cell(cpu_1),
             gpu.map_or_else(String::new, |gpu| format!("{:.3}", milliseconds(gpu))),
             cuda.map_or_else(String::new, |cuda| format!("{:.3}", milliseconds(cuda))),
             cutile.map_or_else(String::new, |cutile| format!("{:.3}", milliseconds(cutile))),
@@ -248,7 +277,7 @@ impl Run<'_> {
                 "{:.3}",
                 milliseconds(offload)
             )),
-            milliseconds(radix_1),
+            cell(radix_1),
             hip.map_or_else(String::new, |hip| format!("{:.3}", milliseconds(hip))),
         );
     }
@@ -309,7 +338,11 @@ fn shuffle<T>(values: &mut [T], seed: u64) {
 }
 
 /// Median of five timed runs after one warm-up; `setup` runs outside the timer.
-fn median<S, R>(mut setup: impl FnMut() -> S, mut operation: impl FnMut(S) -> R) -> Duration {
+fn median<S, R>(
+    samples: usize,
+    mut setup: impl FnMut() -> S,
+    mut operation: impl FnMut(S) -> R,
+) -> Duration {
     // Warm up for at least `WARM_UP`, not just one call: after a few idle seconds a GPU drops to
     // its idle clocks (P8 on an RTX 3060: 210 MHz, a tenth of its peak) and needs sustained work
     // to come back up. The same rule applies to every engine.
@@ -318,7 +351,7 @@ fn median<S, R>(mut setup: impl FnMut() -> S, mut operation: impl FnMut(S) -> R)
     while warm_up.elapsed() < WARM_UP {
         drop(operation(setup()));
     }
-    let mut samples: Vec<Duration> = (0..5)
+    let mut samples: Vec<Duration> = (0..samples)
         .map(|_| {
             let input = setup();
             let start = Instant::now();
@@ -328,6 +361,13 @@ fn median<S, R>(mut setup: impl FnMut() -> S, mut operation: impl FnMut(S) -> R)
         .collect();
     samples.sort_unstable();
     samples[samples.len() / 2]
+}
+
+/// A timing cell: milliseconds, or empty for a skipped column.
+fn cell(duration: Option<Duration>) -> String {
+    duration.map_or_else(String::new, |duration| {
+        format!("{:.3}", milliseconds(duration))
+    })
 }
 
 fn milliseconds(duration: Duration) -> f64 {
