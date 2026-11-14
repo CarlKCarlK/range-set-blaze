@@ -29,6 +29,7 @@ mod device;
 #[cfg(target_arch = "nvptx64")]
 mod ptx;
 mod radix;
+mod ranges;
 
 const BLOCK_SIZE: u32 = 256;
 
