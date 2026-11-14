@@ -33,10 +33,13 @@ const fn scatter_shared(key_bytes: u32) -> u32 {
 
 const HIP_MEMCPY_HOST_TO_DEVICE: i32 = 1;
 const HIP_MEMCPY_DEVICE_TO_HOST: i32 = 2;
+/// `hipDeviceAttributeWarpSize` in HIP's `hipDeviceAttribute_t`.
+const HIP_DEVICE_ATTRIBUTE_WARP_SIZE: i32 = 87;
 
 unsafe extern "C" {
     fn hipInit(flags: u32) -> i32;
     fn hipGetDeviceCount(count: *mut i32) -> i32;
+    fn hipDeviceGetAttribute(value: *mut i32, attribute: i32, device: i32) -> i32;
     fn hipModuleLoadData(module: *mut *mut c_void, image: *const c_void) -> i32;
     fn hipModuleGetFunction(
         function: *mut *mut c_void,
@@ -128,6 +131,15 @@ fn hip() -> Option<&'static Hip> {
         if unsafe { hipInit(0) } != 0
             || unsafe { hipGetDeviceCount(&raw mut count) } != 0
             || count < 1
+        {
+            return None;
+        }
+        // The radix kernels' lane masks are u32: they need 32-lane wavefronts.
+        let mut warp_size = 0;
+        // SAFETY: writes one i32 for device 0, which exists.
+        if unsafe { hipDeviceGetAttribute(&raw mut warp_size, HIP_DEVICE_ATTRIBUTE_WARP_SIZE, 0) }
+            != 0
+            || warp_size != 32
         {
             return None;
         }

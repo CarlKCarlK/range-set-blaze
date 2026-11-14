@@ -71,6 +71,10 @@ fn build_hip() {
             && architecture[3..].chars().all(|c| c.is_ascii_hexdigit()),
         "RANGE_SET_BLAZE_HIP_ARCH must name an AMD architecture such as gfx1151"
     );
+    assert!(
+        amd_has_wave32(&architecture),
+        "RANGE_SET_BLAZE_HIP_ARCH={architecture}: the radix kernels need 32-lane wavefronts (RDNA, gfx10 or newer)"
+    );
     for name in HIP_SOURCES {
         println!("cargo:rerun-if-changed=src/gpu/offload/{name}");
         fs::copy(format!("src/gpu/offload/{name}"), output.join(name))
@@ -90,6 +94,13 @@ fn build_hip() {
     println!("cargo:rustc-link-search=native={library}");
     println!("cargo:rustc-link-lib=dylib=amdhip64");
     println!("cargo:rustc-link-arg=-Wl,-rpath,{library}");
+}
+
+/// Whether an AMD `gfx` architecture runs the 32-lane wavefronts the radix kernels assume:
+/// RDNA (gfx10 and newer) does; GCN and CDNA (gfx9 and older) have only 64-lane wavefronts.
+fn amd_has_wave32(architecture: &str) -> bool {
+    let digits = &architecture[3..];
+    digits.len() >= 4 && digits[..2].parse::<u32>().is_ok_and(|major| major >= 10)
 }
 
 fn run(command: &mut Command) {
@@ -198,6 +209,10 @@ fn offload_target(architecture: &str) -> DeviceTarget {
                 && architecture.len() > 3
                 && architecture[3..].chars().all(|c| c.is_ascii_hexdigit()),
             "RANGE_SET_BLAZE_OFFLOAD_ARCH must name an NVIDIA (sm_86) or AMD (gfx1151) architecture"
+        );
+        assert!(
+            amd_has_wave32(architecture),
+            "RANGE_SET_BLAZE_OFFLOAD_ARCH={architecture}: the radix kernels need 32-lane wavefronts (RDNA, gfx10 or newer)"
         );
         DeviceTarget {
             triple: "amdgcn-amd-amdhsa",

@@ -41,8 +41,9 @@ pub(super) fn sync_block() {
 }
 
 // Radix sort's lane masks are u32, so a 64-lane wavefront would silently break them.
-#[cfg(all(target_arch = "amdgpu", target_feature = "wavefrontsize64"))]
-compile_error!("offload radix sort requires wave32; do not enable wavefrontsize64");
+// rustc has no target-feature cfg for wavefront size, so build.rs rejects AMD
+// architectures without wave32 (gfx9 and older), and Engine::Hip checks the device's
+// warp size at startup.
 
 /// Block-shared (LDS) storage allocated at launch time.
 ///
