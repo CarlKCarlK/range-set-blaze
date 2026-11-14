@@ -19,7 +19,9 @@ use core::arch::amdgpu::{ballot, ds_bpermute, mbcnt_lo, s_barrier, wave_barrier}
 #[cfg(target_arch = "amdgpu")]
 pub(super) use core::arch::amdgpu::{workgroup_id_x as block_idx_x, workitem_id_x as thread_idx_x};
 #[cfg(target_arch = "amdgpu")]
-use core::sync::atomic::{Ordering, fence};
+use core::intrinsics::gpu::gpu_launch_sized_workgroup_mem;
+#[cfg(target_arch = "amdgpu")]
+use core::sync::atomic::{AtomicU32, Ordering, fence};
 
 #[cfg(target_arch = "amdgpu")]
 pub(super) const fn block_dim_x() -> u32 {
@@ -51,7 +53,7 @@ compile_error!("offload radix sort requires wave32; do not enable wavefrontsize6
 pub(super) unsafe fn shared<const BYTES: usize>() -> *mut u8 {
     // u64 alignment covers every u64/u32 access the kernels make. Every call in a
     // workgroup returns the same base address.
-    core::intrinsics::gpu::gpu_launch_sized_workgroup_mem::<u64>().cast()
+    gpu_launch_sized_workgroup_mem::<u64>().cast()
 }
 
 /// The lanes of this wave whose `value` equals this lane's.
@@ -110,6 +112,5 @@ pub(super) unsafe fn sync_warp() {
 pub(super) unsafe fn add_shared(pointer: *mut u32, increment: u32) {
     // SAFETY: the caller provides an aligned counter that only atomics update until
     // the following block barrier.
-    unsafe { core::sync::atomic::AtomicU32::from_ptr(pointer) }
-        .fetch_add(increment, Ordering::Relaxed);
+    unsafe { AtomicU32::from_ptr(pointer) }.fetch_add(increment, Ordering::Relaxed);
 }
