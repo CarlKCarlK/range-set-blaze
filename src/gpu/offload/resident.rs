@@ -119,6 +119,29 @@ impl<'a> DeviceBuffer<'a> {
         }
     }
 
+    /// Downloads only the first `len` words, for results shorter than the allocation.
+    pub(super) fn download_prefix(mut self, len: usize) {
+        assert!(len <= self.host.len(), "offload prefix exceeds its buffer");
+        self.disassociate();
+        // SAFETY: as in download, for the first len words of the same allocation, which
+        // the caller's synchronous kernels have finished initializing.
+        unsafe {
+            assert_eq!(
+                omp_target_memcpy(
+                    self.host.as_mut_ptr().cast(),
+                    self.device,
+                    len * size_of::<u64>(),
+                    0,
+                    0,
+                    omp_get_initial_device(),
+                    0
+                ),
+                0,
+                "offload download failed",
+            );
+        }
+    }
+
     pub(super) fn download_from(mut self, mut source: Self) {
         assert_eq!(
             self.host.len(),

@@ -7,6 +7,8 @@ use super::device;
 #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use super::device::{block_idx_x, sync_block, thread_idx_x};
 #[cfg(target_os = "linux")]
+use super::ranges;
+#[cfg(target_os = "linux")]
 use super::resident::DeviceBuffer;
 #[cfg(target_os = "linux")]
 use core::offload::offload;
@@ -357,32 +359,34 @@ fn radix_scatter(
     }
 }
 
-/// # Safety
-/// keys and scratch must point to len distinct initialized host words, and workspace
-/// to 1 + ceil(len / 4096) * 256 words, all exclusively borrowed. Device 0 must exist.
-/// bits must be 32 or 64 and cover every key's significant bits; len is in 2..=2^30.
+/// Where `sort_on_device` left the sorted keys.
 #[cfg(target_os = "linux")]
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn rsb_offload_radix_sort(
-    keys: *mut u64,
-    scratch: *mut u64,
-    workspace: *mut u64,
-    len: usize,
+enum Sorted<'a> {
+    /// Every byte was constant, so the host keys were already sorted (all equal).
+    OnHost,
+    /// The sorted keys are in `sorted`; `free` is the other, now unused buffer.
+    /// `in_keys` says whether `sorted` is associated with the caller's `keys`.
+    OnDevice {
+        sorted: DeviceBuffer<'a>,
+        free: DeviceBuffer<'a>,
+        in_keys: bool,
+    },
+}
+
+/// Uploads keys and radix-sorts them on the GPU, leaving the result there.
+#[cfg(target_os = "linux")]
+fn sort_on_device<'a>(
+    keys: &'a mut [u64],
+    scratch: &'a mut [u64],
+    workspace: &mut [u64],
     bits: u32,
-) {
+) -> Sorted<'a> {
     assert!(matches!(bits, 32 | 64));
+    let len = keys.len();
     let passes = bits / 8;
     let blocks = (len as u32).div_ceil(TILE);
     let workspace_len = 1 + blocks as usize * RADIX as usize;
-    // SAFETY: all three disjoint host allocations and their exclusive lifetimes are
-    // provided by the caller; their lengths follow the documented workspace formula.
-    let (keys, scratch, workspace) = unsafe {
-        (
-            from_raw_parts_mut(keys, len),
-            from_raw_parts_mut(scratch, len),
-            from_raw_parts_mut(workspace, workspace_len),
-        )
-    };
+    assert_eq!(workspace.len(), workspace_len, "offload workspace length");
     let mut input = DeviceBuffer::upload(keys);
     let mut histogram = [0_u64; 2048];
     {
@@ -407,7 +411,7 @@ pub unsafe extern "C" fn rsb_offload_radix_sort(
         active[pass] = largest != len as u64;
     }
     if !active.iter().any(|&pass| pass) {
-        return; // Every byte is constant: the original host keys are already sorted.
+        return Sorted::OnHost;
     }
     let mut bases = DeviceBuffer::upload(&mut histogram);
     // SAFETY: each scatter completely initializes its output before another pass or
@@ -439,8 +443,160 @@ pub unsafe extern "C" fn rsb_offload_radix_sort(
         in_original = !in_original;
     }
     if in_original {
-        input.download();
+        Sorted::OnDevice {
+            sorted: input,
+            free: output,
+            in_keys: true,
+        }
     } else {
-        input.download_from(output);
+        Sorted::OnDevice {
+            sorted: output,
+            free: input,
+            in_keys: false,
+        }
+    }
+}
+
+/// # Safety
+/// keys and scratch must point to len distinct initialized host words, and workspace
+/// to 1 + ceil(len / 4096) * 256 words, all exclusively borrowed. Device 0 must exist.
+/// bits must be 32 or 64 and cover every key's significant bits; len is in 2..=2^30.
+#[cfg(target_os = "linux")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rsb_offload_radix_sort(
+    keys: *mut u64,
+    scratch: *mut u64,
+    workspace: *mut u64,
+    len: usize,
+    bits: u32,
+) {
+    let workspace_len = 1 + len.div_ceil(TILE as usize) * RADIX as usize;
+    // SAFETY: all three disjoint host allocations and their exclusive lifetimes are
+    // provided by the caller; their lengths follow the documented workspace formula.
+    let (keys, scratch, workspace) = unsafe {
+        (
+            from_raw_parts_mut(keys, len),
+            from_raw_parts_mut(scratch, len),
+            from_raw_parts_mut(workspace, workspace_len),
+        )
+    };
+    match sort_on_device(keys, scratch, workspace, bits) {
+        Sorted::OnHost => {}
+        Sorted::OnDevice {
+            sorted,
+            free,
+            in_keys: true,
+        } => {
+            drop(free);
+            sorted.download();
+        }
+        Sorted::OnDevice {
+            sorted,
+            free,
+            in_keys: false,
+        } => free.download_from(sorted),
+    }
+}
+
+/// `rsb_offload_radix_ranges` left the sorted keys in `keys`; assemble ranges on the host.
+pub const RANGES_SORTED_IN_KEYS: u32 = 0;
+/// The `(first, last)` range pairs are in `keys[..2 * count]`.
+pub const RANGES_IN_KEYS: u32 = 1;
+/// The `(first, last)` range pairs are in `scratch[..2 * count]`.
+pub const RANGES_IN_SCRATCH: u32 = 2;
+/// Every byte was constant, so all keys equal `keys[0]`: one range.
+pub const RANGES_ALL_EQUAL: u32 = 3;
+
+/// Sorts keys and finds their ranges on the GPU, downloading only the ranges. Returns
+/// where the result is (`RANGES_*`) and stores the number of ranges in `count`. When
+/// ranges would need more than `len` words (most keys isolated), it downloads the
+/// sorted keys instead (`RANGES_SORTED_IN_KEYS`), since that is no larger.
+///
+/// # Safety
+/// As for `rsb_offload_radix_sort`; `count` must be writable. Keys `gap_left` and
+/// `gap_right` also count as adjacent when `has_gap` is 1.
+#[cfg(target_os = "linux")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rsb_offload_radix_ranges(
+    keys: *mut u64,
+    scratch: *mut u64,
+    workspace: *mut u64,
+    len: usize,
+    bits: u32,
+    gap_left: u64,
+    gap_right: u64,
+    has_gap: u32,
+    count: *mut usize,
+) -> u32 {
+    let workspace_len = 1 + len.div_ceil(TILE as usize) * RADIX as usize;
+    // SAFETY: as in rsb_offload_radix_sort.
+    let (keys, scratch, workspace) = unsafe {
+        (
+            from_raw_parts_mut(keys, len),
+            from_raw_parts_mut(scratch, len),
+            from_raw_parts_mut(workspace, workspace_len),
+        )
+    };
+    // SAFETY: the caller provides a writable count.
+    let count = unsafe { &mut *count };
+    let (mut sorted, mut free, in_keys) =
+        match sort_on_device(&mut *keys, &mut *scratch, &mut *workspace, bits) {
+            Sorted::OnHost => {
+                *count = 1;
+                return RANGES_ALL_EQUAL;
+            }
+            Sorted::OnDevice {
+                sorted,
+                free,
+                in_keys,
+            } => (sorted, free, in_keys),
+        };
+    let blocks = len.div_ceil(TILE as usize);
+    let total = {
+        // SAFETY: clear_workspace initializes every count before count_starts adds to it.
+        let mut counts = unsafe { DeviceBuffer::scratch(&mut workspace[..blocks]) };
+        offload! { kernel = clear_workspace,
+        workgroup_dim = [(blocks as u32).div_ceil(BLOCK), 1, 1],
+        thread_dim = [BLOCK, 1, 1], device = 0,
+        args = (counts.pointer(), blocks as u32), }
+        offload! { kernel = ranges::count_starts, workgroup_dim = [blocks as u32, 1, 1],
+        thread_dim = [BLOCK, 1, 1], device = 0,
+        args = (sorted.pointer(), len as u32, gap_left, gap_right, has_gap, counts.pointer()), }
+        counts.download_prefix(blocks);
+        // Exclusive scan: each tile's first range number.
+        let mut total = 0;
+        for word in &mut workspace[..blocks] {
+            let tile_count = *word;
+            *word = total;
+            total += tile_count;
+        }
+        total as usize
+    };
+    if 2 * total > len {
+        // The ranges are no smaller than the keys; download the sorted keys instead.
+        if in_keys {
+            drop(free);
+            sorted.download();
+        } else {
+            free.download_from(sorted);
+        }
+        *count = 0;
+        return RANGES_SORTED_IN_KEYS;
+    }
+    {
+        let mut offsets = DeviceBuffer::upload(&mut workspace[..blocks]);
+        offload! { kernel = ranges::emit_ranges, workgroup_dim = [blocks as u32, 1, 1],
+        thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(ranges::EMIT_SHARED), device = 0,
+        args = (sorted.pointer(), len as u32, gap_left, gap_right, has_gap,
+            offsets.pointer(), free.pointer()), }
+    }
+    drop(sorted);
+    free.download_prefix(2 * total);
+    *count = total;
+    // The free buffer is the one the sorted keys were not in.
+    if in_keys {
+        RANGES_IN_SCRATCH
+    } else {
+        RANGES_IN_KEYS
     }
 }

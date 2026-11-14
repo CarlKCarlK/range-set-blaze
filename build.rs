@@ -4,10 +4,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-const OFFLOAD_SOURCES: [&str; 5] = [
+const OFFLOAD_SOURCES: [&str; 6] = [
     "native.rs",
     "resident.rs",
     "radix.rs",
+    "ranges.rs",
     "device.rs",
     "ptx.rs",
 ];

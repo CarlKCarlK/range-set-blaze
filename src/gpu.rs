@@ -275,6 +275,7 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
         Engine::CuTile => from_slice_cutile(values),
         #[cfg(feature = "offload_nightly_experimental")]
         Engine::Offload | Engine::OffloadOrCpu => {
+            use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
             if T::KEY_WORDS == 0 || !offload::available() {
                 assert!(
                     engine == Engine::OffloadOrCpu,
@@ -282,10 +283,16 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
                 );
                 return from_slice_cpu(values, all_threads());
             }
-            let mut keys: Vec<u64> = values.iter().map(|value| value.encode()).collect();
-            offload::sort_bits(&mut keys, u32::from(T::KEY_WORDS) * 32);
-            let decoded: Vec<T> = keys.into_iter().map(T::decode).collect();
-            RangeSetBlaze::from_slice(&decoded)
+            let pool = thread_pool(all_threads());
+            let mut keys: Vec<u64> =
+                pool.install(|| values.par_iter().map(|value| value.encode()).collect());
+            // The GPU sorts and finds the ranges; only the ranges come back.
+            let ranges = offload::ranges_bits(&mut keys, u32::from(T::KEY_WORDS) * 32, T::GAP);
+            drop(keys);
+            let ranges = ranges
+                .into_iter()
+                .map(|(start, end)| T::decode(start)..=T::decode(end));
+            RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
         }
     }
 }
