@@ -14,7 +14,17 @@ unsafe extern "C" {
         len: usize,
         bits: u32,
     );
-    fn rsb_offload_radix_ranges(
+    fn rsb_offload_radix_ranges_u32(
+        keys: *mut u32,
+        scratch: *mut u32,
+        workspace: *mut u64,
+        len: usize,
+        gap_left: u64,
+        gap_right: u64,
+        has_gap: u32,
+        count: *mut usize,
+    ) -> u32;
+    fn rsb_offload_radix_ranges_u64(
         keys: *mut u64,
         scratch: *mut u64,
         workspace: *mut u64,
@@ -27,7 +37,7 @@ unsafe extern "C" {
     ) -> u32;
 }
 
-// Where rsb_offload_radix_ranges left its result (keep in sync with radix.rs).
+// Where rsb_offload_radix_ranges_* left its result (keep in sync with radix.rs).
 const RANGES_SORTED_IN_KEYS: u32 = 0;
 const RANGES_IN_KEYS: u32 = 1;
 const RANGES_IN_SCRATCH: u32 = 2;
@@ -88,6 +98,43 @@ fn use_radix(len: usize) -> bool {
     }
 }
 
+/// As [`ranges_bits`], for 32-bit keys: half the memory traffic of 64-bit keys.
+pub(super) fn ranges_u32(keys: &mut [u32], gap: Option<(u64, u64)>) -> Vec<(u64, u64)> {
+    let len = keys.len();
+    if len < 2 || !use_radix(len) {
+        let mut wide: Vec<u64> = keys.iter().map(|&key| u64::from(key)).collect();
+        return ranges_bits(&mut wide, 32, gap);
+    }
+    assert!(available(), "Engine::Offload: no offload GPU is available");
+    assert!(len <= 1 << 30, "Engine::Offload: input exceeds 2^30 keys");
+    if let Some((left, right)) = gap {
+        assert!(
+            u32::try_from(left).is_ok() && u32::try_from(right).is_ok(),
+            "offload 32-bit gap exceeds u32"
+        );
+    }
+    gpu_ranges(
+        keys,
+        gap,
+        |keys, scratch, workspace, gap_left, gap_right, has_gap, count| {
+            // SAFETY: gpu_ranges passes disjoint, exclusively borrowed allocations of the
+            // documented lengths; len and the gap are checked above.
+            unsafe {
+                rsb_offload_radix_ranges_u32(
+                    keys.as_mut_ptr(),
+                    scratch.as_mut_ptr(),
+                    workspace.as_mut_ptr(),
+                    keys.len(),
+                    gap_left,
+                    gap_right,
+                    has_gap,
+                    count,
+                )
+            }
+        },
+    )
+}
+
 /// Sorts keys on the GPU and returns their ranges as `(first, last)` key pairs. Keys
 /// `gap.0` and `gap.1` also count as adjacent. With radix sort, the GPU finds the
 /// ranges too, and only they return to the host.
@@ -103,47 +150,72 @@ pub(super) fn ranges_bits(
     }
     assert!(available(), "Engine::Offload: no offload GPU is available");
     check_radix_input(keys, bits);
-    let mut scratch = vec![0_u64; len];
+    gpu_ranges(
+        keys,
+        gap,
+        |keys, scratch, workspace, gap_left, gap_right, has_gap, count| {
+            // SAFETY: gpu_ranges passes disjoint, exclusively borrowed allocations of the
+            // documented lengths; check_radix_input checked the length and bits.
+            unsafe {
+                rsb_offload_radix_ranges_u64(
+                    keys.as_mut_ptr(),
+                    scratch.as_mut_ptr(),
+                    workspace.as_mut_ptr(),
+                    keys.len(),
+                    bits,
+                    gap_left,
+                    gap_right,
+                    has_gap,
+                    count,
+                )
+            }
+        },
+    )
+}
+
+/// Allocates the scratch buffers, runs `launch` (one of the `rsb_offload_radix_ranges_*`
+/// entry points), and collects the ranges from wherever it left them.
+fn gpu_ranges<K: Copy + Default + Into<u64>>(
+    keys: &mut [K],
+    gap: Option<(u64, u64)>,
+    launch: impl FnOnce(&mut [K], &mut [K], &mut [u64], u64, u64, u32, *mut usize) -> u32,
+) -> Vec<(u64, u64)> {
+    let len = keys.len();
+    let mut scratch = vec![K::default(); len];
     let mut workspace = vec![0_u64; 1 + len.div_ceil(4096) * 256];
     let (gap_left, gap_right) = gap.unwrap_or((0, 0));
     let mut count = 0;
-    // SAFETY: all three initialized allocations are disjoint and exclusively borrowed
-    // until synchronous kernels finish. Lengths and significant bits are checked above.
-    let location = unsafe {
-        rsb_offload_radix_ranges(
-            keys.as_mut_ptr(),
-            scratch.as_mut_ptr(),
-            workspace.as_mut_ptr(),
-            len,
-            bits,
-            gap_left,
-            gap_right,
-            u32::from(gap.is_some()),
-            &raw mut count,
-        )
-    };
+    let location = launch(
+        keys,
+        &mut scratch,
+        &mut workspace,
+        gap_left,
+        gap_right,
+        u32::from(gap.is_some()),
+        &raw mut count,
+    );
     let pairs = match location {
         RANGES_SORTED_IN_KEYS => return host_ranges(keys, gap),
         RANGES_IN_KEYS => &keys[..2 * count],
         RANGES_IN_SCRATCH => &scratch[..2 * count],
-        RANGES_ALL_EQUAL => return vec![(keys[0], keys[0])],
+        RANGES_ALL_EQUAL => return vec![(keys[0].into(), keys[0].into())],
         _ => unreachable!("unknown offload ranges location {location}"),
     };
     pairs
         .as_chunks::<2>()
         .0
         .iter()
-        .map(|&pair| pair.into())
+        .map(|&[first, last]| (first.into(), last.into()))
         .collect()
 }
 
 /// Ranges of sorted keys, on the host; the same rule as the GPU's `ranges.rs`.
-fn host_ranges(sorted: &[u64], gap: Option<(u64, u64)>) -> Vec<(u64, u64)> {
+fn host_ranges<K: Copy + Into<u64>>(sorted: &[K], gap: Option<(u64, u64)>) -> Vec<(u64, u64)> {
     let joins = |left: u64, right: u64| {
         left == right || left.checked_add(1) == Some(right) || gap == Some((left, right))
     };
     let mut ranges: Vec<(u64, u64)> = Vec::new();
-    for &key in sorted {
+    for key in sorted.iter().map(|&key| key.into()) {
         match ranges.last_mut() {
             Some((_, last)) if joins(*last, key) => *last = key,
             _ => ranges.push((key, key)),
@@ -256,9 +328,17 @@ mod tests {
                 let mut sorted = keys.clone();
                 sorted.sort_unstable();
                 let expected = host_ranges(&sorted, gap);
+                if bits == 32 {
+                    let mut narrow: Vec<u32> = keys
+                        .iter()
+                        .map(|&key| u32::try_from(key).expect("checked above"))
+                        .collect();
+                    let actual = ranges_u32(&mut narrow, gap);
+                    assert_eq!(actual, expected, "u32: len={len}, pattern={pattern}");
+                }
                 let mut keys = keys;
                 let actual = ranges_bits(&mut keys, bits, gap);
-                assert_eq!(actual, expected, "len={len}, pattern={pattern}");
+                assert_eq!(actual, expected, "u64: len={len}, pattern={pattern}");
             }
         }
     }

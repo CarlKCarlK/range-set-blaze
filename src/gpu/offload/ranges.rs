@@ -8,6 +8,7 @@
 use super::device;
 #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use super::device::{block_idx_x, sync_block, thread_idx_x};
+use super::key::Key;
 use core::offload::offload_kernel;
 #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -25,9 +26,9 @@ pub(super) const EMIT_SHARED: usize = 32;
 /// `gap_right` also count as adjacent when `has_gap` is 1 (for `char`, the surrogates).
 #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 #[inline(always)]
-fn joins(left: u64, right: u64, gap_left: u64, gap_right: u64, has_gap: u32) -> bool {
+fn joins<K: Key>(left: K, right: K, gap_left: K, gap_right: K, has_gap: u32) -> bool {
     left == right
-        || (left != u64::MAX && right == left + 1)
+        || (left != K::MAX && right == left.next())
         || (has_gap == 1 && left == gap_left && right == gap_right)
 }
 
@@ -37,11 +38,11 @@ fn joins(left: u64, right: u64, gap_left: u64, gap_right: u64, has_gap: u32) -> 
 /// `keys` must hold `len` initialized words and `index < len`.
 #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 #[inline(always)]
-unsafe fn is_start(
-    keys: *mut u64,
+unsafe fn is_start<K: Key>(
+    keys: *mut K,
     index: u32,
-    gap_left: u64,
-    gap_right: u64,
+    gap_left: K,
+    gap_right: K,
     has_gap: u32,
 ) -> bool {
     // SAFETY: the caller bounds index; index - 1 is read only when index > 0.
@@ -59,14 +60,15 @@ unsafe fn is_start(
 
 /// Adds the number of range starts in each tile to `counts[tile]`, which must be zero.
 #[offload_kernel]
-pub(super) fn count_starts(
-    keys: *mut u64,
+pub(super) fn count_starts<K: Key>(
+    keys: *mut K,
     len: u32,
     gap_left: u64,
     gap_right: u64,
     has_gap: u32,
     counts: *mut u64,
 ) {
+    let (gap_left, gap_right) = (K::from_u64(gap_left), K::from_u64(gap_right));
     // SAFETY: these intrinsics only read this thread's launch coordinates.
     let (tid, tile) = unsafe { (thread_idx_x(), block_idx_x()) };
     let mut count = 0_u32;
@@ -104,15 +106,16 @@ pub(super) fn count_starts(
 /// Writes range `r` as `ranges[2r] = first key`, `ranges[2r + 1] = last key`, given each
 /// tile's exclusive start offset from the scanned `count_starts` totals.
 #[offload_kernel]
-pub(super) fn emit_ranges(
-    keys: *mut u64,
+pub(super) fn emit_ranges<K: Key>(
+    keys: *mut K,
     len: u32,
     gap_left: u64,
     gap_right: u64,
     has_gap: u32,
     tile_offsets: *mut u64,
-    ranges: *mut u64,
+    ranges: *mut K,
 ) {
+    let (gap_left, gap_right) = (K::from_u64(gap_left), K::from_u64(gap_right));
     // SAFETY: the launch provides EMIT_SHARED bytes, aligned, for eight warp totals.
     let warp_totals = unsafe { device::shared::<EMIT_SHARED>().cast::<u32>() };
     // SAFETY: these intrinsics only read this thread's launch coordinates.

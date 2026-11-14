@@ -26,6 +26,7 @@ mod resident;
 use resident::DeviceBuffer;
 #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 mod device;
+mod key;
 #[cfg(target_arch = "nvptx64")]
 mod ptx;
 mod radix;

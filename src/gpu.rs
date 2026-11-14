@@ -284,11 +284,23 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
                 return from_slice_cpu(values, all_threads());
             }
             let pool = thread_pool(all_threads());
-            let mut keys: Vec<u64> =
-                pool.install(|| values.par_iter().map(|value| value.encode()).collect());
-            // The GPU sorts and finds the ranges; only the ranges come back.
-            let ranges = offload::ranges_bits(&mut keys, u32::from(T::KEY_WORDS) * 32, T::GAP);
-            drop(keys);
+            // The GPU sorts and finds the ranges; only the ranges come back. Types that
+            // fit in 32 bits send 32-bit keys, halving the memory traffic.
+            let ranges = if T::KEY_WORDS == 1 {
+                let mut keys: Vec<u32> = pool.install(|| {
+                    values
+                        .par_iter()
+                        .map(|value| {
+                            u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32")
+                        })
+                        .collect()
+                });
+                offload::ranges_u32(&mut keys, T::GAP)
+            } else {
+                let mut keys: Vec<u64> =
+                    pool.install(|| values.par_iter().map(|value| value.encode()).collect());
+                offload::ranges_bits(&mut keys, 64, T::GAP)
+            };
             let ranges = ranges
                 .into_iter()
                 .map(|(start, end)| T::decode(start)..=T::decode(end));

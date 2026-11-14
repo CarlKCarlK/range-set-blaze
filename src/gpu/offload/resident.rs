@@ -27,25 +27,25 @@ unsafe extern "C" {
 }
 
 /// The mutable borrow prevents host access until the final download completes.
-pub(super) struct DeviceBuffer<'a> {
-    host: &'a mut [u64],
+pub(super) struct DeviceBuffer<'a, T: Copy = u64> {
+    host: &'a mut [T],
     device: *mut c_void,
     associated: bool,
 }
 
-impl<'a> DeviceBuffer<'a> {
-    pub(super) fn upload(host: &'a mut [u64]) -> Self {
+impl<'a, T: Copy> DeviceBuffer<'a, T> {
+    pub(super) fn upload(host: &'a mut [T]) -> Self {
         Self::allocate(host, true)
     }
 
     /// # Safety
     /// The caller must initialize every device element before it is read by a kernel
     /// or downloaded. The host slice itself must remain initialized throughout.
-    pub(super) unsafe fn scratch(host: &'a mut [u64]) -> Self {
+    pub(super) unsafe fn scratch(host: &'a mut [T]) -> Self {
         Self::allocate(host, false)
     }
 
-    fn allocate(host: &'a mut [u64], upload: bool) -> Self {
+    fn allocate(host: &'a mut [T], upload: bool) -> Self {
         assert!(!host.is_empty(), "offload buffer must not be empty");
         // SAFETY: device 0 has been checked by the caller. The initialized host slice
         // stays exclusively borrowed until Drop, and the allocation has its exact size.
@@ -82,7 +82,7 @@ impl<'a> DeviceBuffer<'a> {
         }
     }
 
-    pub(super) fn kernel_argument<const N: usize>(&mut self) -> *mut [u64; N] {
+    pub(super) fn kernel_argument<const N: usize>(&mut self) -> *mut [T; N] {
         assert_eq!(
             self.host.len(),
             N,
@@ -93,7 +93,7 @@ impl<'a> DeviceBuffer<'a> {
 
     /// The whole allocation is already mapped, so a kernel's raw pointer argument
     /// may look up its base while indexing the full explicitly supplied length.
-    pub(super) fn pointer(&mut self) -> *mut u64 {
+    pub(super) fn pointer(&mut self) -> *mut T {
         self.host.as_mut_ptr()
     }
 
@@ -130,7 +130,7 @@ impl<'a> DeviceBuffer<'a> {
                 omp_target_memcpy(
                     self.host.as_mut_ptr().cast(),
                     self.device,
-                    len * size_of::<u64>(),
+                    len * size_of::<T>(),
                     0,
                     0,
                     omp_get_initial_device(),
@@ -183,7 +183,7 @@ impl<'a> DeviceBuffer<'a> {
     }
 }
 
-impl Drop for DeviceBuffer<'_> {
+impl<T: Copy> Drop for DeviceBuffer<'_, T> {
     fn drop(&mut self) {
         if self.associated {
             self.disassociate();

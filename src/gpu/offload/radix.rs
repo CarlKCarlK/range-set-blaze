@@ -6,6 +6,7 @@
 use super::device;
 #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use super::device::{block_idx_x, sync_block, thread_idx_x};
+use super::key::Key;
 #[cfg(target_os = "linux")]
 use super::ranges;
 #[cfg(target_os = "linux")]
@@ -48,7 +49,7 @@ const READY: u64 = AGGREGATE | INCLUSIVE;
 
 /// Count every byte once, using block-local histograms before updating global counts.
 #[offload_kernel]
-fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048]) {
+pub(super) fn digit_counts<K: Key>(keys: *mut K, len: u32, passes: u32, counts: *mut [u64; 2048]) {
     // SAFETY: the launch has 256 threads; shared storage has 2048 aligned u32 counters.
     let (tid, block, shared) = unsafe {
         (
@@ -71,14 +72,10 @@ fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048])
         let key = if valid {
             unsafe { *keys.add(index as usize) }
         } else {
-            0
+            K::ZERO
         };
         for pass in 0..passes {
-            let digit = if valid {
-                ((key >> (pass * 8)) & 255) as u32
-            } else {
-                RADIX
-            };
+            let digit = if valid { key.digit(pass * 8) } else { RADIX };
             // SAFETY: all lanes, including invalid tail lanes, execute every match.
             let peers = unsafe { device::match_any(digit) };
             if valid && peers & lane_below == 0 {
@@ -123,24 +120,24 @@ fn clear_workspace(workspace: *mut u64, len: u32) {
 
 /// Stable scatter of one byte. Ticket order ensures look-back waits only for blocks
 /// that have started. Each block uses warp ranking and shared-memory coalesced output,
-/// as in src/gpu/cuda.rs, with u64 keys and stdarch/PTX operations here.
+/// as in src/gpu/cuda.rs, with generic keys and stdarch/PTX operations here.
 #[offload_kernel]
-fn radix_scatter(
-    keys: *mut u64,
+pub(super) fn radix_scatter<K: Key>(
+    keys: *mut K,
     len: u32,
     shift: u32,
     digit_bases: *mut u64,
     bases_offset: u32,
     status: *mut u64,
-    keys_out: *mut u64,
+    keys_out: *mut K,
 ) {
     // SAFETY: the block-shared allocation is aligned and contains these disjoint arrays:
-    // 4096 u64 keys, 2048 u32 warp slots, two 256-u32 prefix arrays, 8 warp totals,
+    // 4096 keys (room for u64), 2048 u32 warp slots, two 256-u32 prefix arrays, 8 warp totals,
     // and one ticket. Every read follows initialization and a warp/block barrier.
     let (sorted_keys, warp_slots, tile_starts, global_starts, warp_totals, tile_index) = unsafe {
         let shared = device::shared::<SCATTER_SHARED>();
         (
-            shared.cast::<u64>(),
+            shared.cast::<K>(),
             shared.add(32768).cast::<u32>(),
             shared.add(40960).cast::<u32>(),
             shared.add(41984).cast::<u32>(),
@@ -187,7 +184,7 @@ fn radix_scatter(
         // Past the end, a digit no real key has, so those lanes match only each other.
         let digit = if valid {
             // SAFETY: valid bounds this index within the fully mapped input.
-            ((unsafe { *keys.add(index as usize) } >> shift) & 255) as u32
+            unsafe { *keys.add(index as usize) }.digit(shift)
         } else {
             RADIX
         };
@@ -301,13 +298,9 @@ fn radix_scatter(
             // SAFETY: valid bounds this index within the resident input allocation.
             unsafe { *keys.add(index as usize) }
         } else {
-            0
+            K::ZERO
         };
-        let digit = if valid {
-            ((key >> shift) & 255) as u32
-        } else {
-            RADIX
-        };
+        let digit = if valid { key.digit(shift) } else { RADIX };
         // SAFETY: all 32 lanes execute this operation, including invalid tail lanes.
         let peers = unsafe { device::match_any(digit) };
         let rank = (peers & lane_below).count_ones();
@@ -346,7 +339,7 @@ fn radix_scatter(
     while place < in_tile {
         // SAFETY: scatter initialized each slot below in_tile, then all threads synchronized.
         let key = unsafe { *sorted_keys.add(place as usize) };
-        let digit = (((key >> shift) & 255) as u32) as usize;
+        let digit = key.digit(shift) as usize;
         // SAFETY: both 256-entry prefix arrays were initialized before the block barrier.
         let destination =
             unsafe { *global_starts.add(digit) + place - *tile_starts.add(digit) } as usize;
@@ -361,26 +354,26 @@ fn radix_scatter(
 
 /// Where `sort_on_device` left the sorted keys.
 #[cfg(target_os = "linux")]
-enum Sorted<'a> {
+enum Sorted<'a, K: Key> {
     /// Every byte was constant, so the host keys were already sorted (all equal).
     OnHost,
     /// The sorted keys are in `sorted`; `free` is the other, now unused buffer.
     /// `in_keys` says whether `sorted` is associated with the caller's `keys`.
     OnDevice {
-        sorted: DeviceBuffer<'a>,
-        free: DeviceBuffer<'a>,
+        sorted: DeviceBuffer<'a, K>,
+        free: DeviceBuffer<'a, K>,
         in_keys: bool,
     },
 }
 
 /// Uploads keys and radix-sorts them on the GPU, leaving the result there.
 #[cfg(target_os = "linux")]
-fn sort_on_device<'a>(
-    keys: &'a mut [u64],
-    scratch: &'a mut [u64],
+fn sort_on_device<'a, K: Key>(
+    keys: &'a mut [K],
+    scratch: &'a mut [K],
     workspace: &mut [u64],
     bits: u32,
-) -> Sorted<'a> {
+) -> Sorted<'a, K> {
     assert!(matches!(bits, 32 | 64));
     let len = keys.len();
     let passes = bits / 8;
@@ -391,7 +384,7 @@ fn sort_on_device<'a>(
     let mut histogram = [0_u64; 2048];
     {
         let mut counts = DeviceBuffer::upload(&mut histogram);
-        offload! { kernel = digit_counts, workgroup_dim = [blocks, 1, 1],
+        offload! { kernel = digit_counts::<K>, workgroup_dim = [blocks, 1, 1],
         thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(COUNTS_SHARED), device = 0,
         args = (input.pointer(), len as u32, passes, counts.kernel_argument::<2048>()), }
         counts.download();
@@ -436,7 +429,7 @@ fn sort_on_device<'a>(
         } else {
             (output.pointer(), input.pointer())
         };
-        offload! { kernel = radix_scatter, workgroup_dim = [blocks, 1, 1],
+        offload! { kernel = radix_scatter::<K>, workgroup_dim = [blocks, 1, 1],
         thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(SCATTER_SHARED), device = 0,
         args = (from, len as u32, pass as u32 * 8, bases.pointer(),
             pass as u32 * 256, status.pointer(), to), }
@@ -509,17 +502,66 @@ pub const RANGES_ALL_EQUAL: u32 = 3;
 
 /// Sorts keys and finds their ranges on the GPU, downloading only the ranges. Returns
 /// where the result is (`RANGES_*`) and stores the number of ranges in `count`. When
-/// ranges would need more than `len` words (most keys isolated), it downloads the
+/// ranges would need more than `len` keys (most keys isolated), it downloads the
 /// sorted keys instead (`RANGES_SORTED_IN_KEYS`), since that is no larger.
 ///
 /// # Safety
-/// As for `rsb_offload_radix_sort`; `count` must be writable. Keys `gap_left` and
-/// `gap_right` also count as adjacent when `has_gap` is 1.
+/// As for `rsb_offload_radix_sort`, with 32-bit keys; `count` must be writable. Keys
+/// `gap_left` and `gap_right` (which must fit in u32) also count as adjacent when
+/// `has_gap` is 1.
 #[cfg(target_os = "linux")]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn rsb_offload_radix_ranges(
+pub unsafe extern "C" fn rsb_offload_radix_ranges_u32(
+    keys: *mut u32,
+    scratch: *mut u32,
+    workspace: *mut u64,
+    len: usize,
+    gap_left: u64,
+    gap_right: u64,
+    has_gap: u32,
+    count: *mut usize,
+) -> u32 {
+    // SAFETY: forwarded from this function's own contract.
+    unsafe {
+        radix_ranges(
+            keys, scratch, workspace, len, 32, gap_left, gap_right, has_gap, count,
+        )
+    }
+}
+
+/// As `rsb_offload_radix_ranges_u32`, for 64-bit keys whose significant bits `bits`
+/// (32 or 64) covers.
+///
+/// # Safety
+/// As for `rsb_offload_radix_ranges_u32`, with 64-bit keys.
+#[cfg(target_os = "linux")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rsb_offload_radix_ranges_u64(
     keys: *mut u64,
     scratch: *mut u64,
+    workspace: *mut u64,
+    len: usize,
+    bits: u32,
+    gap_left: u64,
+    gap_right: u64,
+    has_gap: u32,
+    count: *mut usize,
+) -> u32 {
+    // SAFETY: forwarded from this function's own contract.
+    unsafe {
+        radix_ranges(
+            keys, scratch, workspace, len, bits, gap_left, gap_right, has_gap, count,
+        )
+    }
+}
+
+/// # Safety
+/// See `rsb_offload_radix_ranges_u32`.
+#[cfg(target_os = "linux")]
+#[allow(clippy::too_many_arguments)]
+unsafe fn radix_ranges<K: Key>(
+    keys: *mut K,
+    scratch: *mut K,
     workspace: *mut u64,
     len: usize,
     bits: u32,
@@ -559,7 +601,7 @@ pub unsafe extern "C" fn rsb_offload_radix_ranges(
         workgroup_dim = [(blocks as u32).div_ceil(BLOCK), 1, 1],
         thread_dim = [BLOCK, 1, 1], device = 0,
         args = (counts.pointer(), blocks as u32), }
-        offload! { kernel = ranges::count_starts, workgroup_dim = [blocks as u32, 1, 1],
+        offload! { kernel = ranges::count_starts::<K>, workgroup_dim = [blocks as u32, 1, 1],
         thread_dim = [BLOCK, 1, 1], device = 0,
         args = (sorted.pointer(), len as u32, gap_left, gap_right, has_gap, counts.pointer()), }
         counts.download_prefix(blocks);
@@ -585,7 +627,7 @@ pub unsafe extern "C" fn rsb_offload_radix_ranges(
     }
     {
         let mut offsets = DeviceBuffer::upload(&mut workspace[..blocks]);
-        offload! { kernel = ranges::emit_ranges, workgroup_dim = [blocks as u32, 1, 1],
+        offload! { kernel = ranges::emit_ranges::<K>, workgroup_dim = [blocks as u32, 1, 1],
         thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(ranges::EMIT_SHARED), device = 0,
         args = (sorted.pointer(), len as u32, gap_left, gap_right, has_gap,
             offsets.pointer(), free.pointer()), }
