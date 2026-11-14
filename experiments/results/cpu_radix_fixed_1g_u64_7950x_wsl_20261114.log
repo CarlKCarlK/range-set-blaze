@@ -1,0 +1,4 @@
+Benchmark date: 2026-11-14
+CPU: Ryzen 9 7950X, WSL2
+Run: gpu_ingest --quick --cpu 16 --type u64 1073741824 (features shuffled_slices)
+Engine::CpuRadix after two fixes: top split sized for ~2^18-key buckets (8-16 bits), and digits taken from key - min. The harness u64 keys are 0xffff_ff00 + k, so absolute digits put almost all keys in a few buckets (before: 16.7 s).

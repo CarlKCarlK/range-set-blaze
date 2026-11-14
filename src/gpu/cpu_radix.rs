@@ -1,10 +1,13 @@
 //! A parallel radix sort for the CPU, so [`Engine::CpuRadix`](super::Engine::CpuRadix)
 //! compares against the GPU engines with the same kind of sort they use. Safe Rust only.
 //!
-//! 1. Split by the highest 8 significant key bits, in parallel: each thread bucket-sorts
-//!    its chunk into its own buffer, then each bucket gathers its pieces into its own
-//!    disjoint slice of the output. Using the bits just below the highest set bit keeps
-//!    narrow key ranges spread over all 256 buckets.
+//! Digits come from each key minus the smallest key, so they span only the occupied range.
+//!
+//! 1. Split by the highest significant key bits, in parallel: each thread bucket-sorts its
+//!    chunk into its own buffer, then each bucket gathers its pieces into its own disjoint
+//!    slice of the output. Using the bits just below the highest set bit keeps narrow key
+//!    ranges spread over every bucket. The split is wide enough (8 to 16 bits) that each
+//!    bucket holds about `BUCKET_TARGET` keys, so the next step works in cache.
 //! 2. Sort each bucket in parallel with a least-significant-digit radix sort over the
 //!    remaining bits, skipping passes whose digit is the same for every key.
 //!
@@ -17,11 +20,14 @@ use rayon::slice::ParallelSlice;
 use std::vec;
 use std::vec::Vec;
 
-const RADIX: usize = 256;
 /// Below this, splitting across threads costs more than it saves.
 const PARALLEL_MIN: usize = 1 << 16;
 /// Buckets this small sort faster with a comparison sort than with counting passes.
 const SMALL_BUCKET: usize = 64;
+/// About how many keys each top-level bucket should hold: 1–2 MB, which stays in cache
+/// while the bucket sorts. With a fixed 256 buckets, a billion keys made 32 MB buckets and
+/// the bucket sorts thrashed (2^30 u64 keys took 14–17 s against 5–7 s for `Engine::Cpu`).
+const BUCKET_TARGET: usize = 1 << 18;
 
 /// Sorts `values` by `key`, which must order them as `Ord` does. Call it inside the
 /// Rayon pool whose threads should do the work.
@@ -34,17 +40,31 @@ where
         values.sort_unstable_by_key(|&value| key(value));
         return;
     }
-    let significant = values
+    // Sort by distance from the smallest key: the same order, but the digits cover only
+    // the span the keys occupy. Keys offset by a large constant (such as 2^32 - 256 + k)
+    // would otherwise crowd into a few top-level buckets.
+    let (low, high) = values
         .par_iter()
-        .map(|&value| key(value))
-        .reduce(|| 0, |left, right| left | right);
-    let bits = u64::BITS - significant.leading_zeros();
+        .map(|&value| (key(value), key(value)))
+        .reduce(
+            || (u64::MAX, 0),
+            |(low_left, high_left), (low_right, high_right)| {
+                (low_left.min(low_right), high_left.max(high_right))
+            },
+        );
+    let bits = u64::BITS - (high - low).leading_zeros();
     if bits == 0 {
-        return; // Every key is zero.
+        return; // Every key is equal.
     }
-    let shift = bits.saturating_sub(8);
-    let sizes = split_by_top_digit(values, &key, shift);
-    let mut buckets = Vec::with_capacity(RADIX);
+    let key = |value: T| key(value) - low;
+    let wanted = (values.len() / BUCKET_TARGET)
+        .max(1)
+        .next_power_of_two()
+        .trailing_zeros();
+    let top_bits = wanted.clamp(8, 16).min(bits);
+    let shift = bits - top_bits;
+    let sizes = split_by_top_digit(values, &key, shift, top_bits);
+    let mut buckets = Vec::with_capacity(sizes.len());
     let mut rest = &mut *values;
     for size in sizes {
         let (bucket, tail) = rest.split_at_mut(size);
@@ -56,33 +76,36 @@ where
         .for_each(|bucket| sort_low_digits(bucket, &key, shift));
 }
 
-const fn digit(key: u64, shift: u32) -> usize {
-    ((key >> shift) & 0xff) as usize
+/// The `width`-bit digit of `key` starting at bit `shift`.
+fn digit(key: u64, shift: u32, width: u32) -> usize {
+    let mask = (1_u64 << width) - 1;
+    usize::try_from((key >> shift) & mask).expect("digits are at most 16 bits")
 }
 
-/// Reorders `values` so their top digits ascend, keeping input order within a digit.
-/// Returns how many values have each top digit.
-fn split_by_top_digit<T, F>(values: &mut [T], key: &F, shift: u32) -> [usize; RADIX]
+/// Reorders `values` so their `width`-bit top digits ascend, keeping input order within a
+/// digit. Returns how many values have each top digit.
+fn split_by_top_digit<T, F>(values: &mut [T], key: &F, shift: u32, width: u32) -> Vec<usize>
 where
     T: Copy + Send + Sync,
     F: Fn(T) -> u64 + Sync,
 {
+    let radix = 1_usize << width;
     let chunk_len = values.len().div_ceil(rayon::current_num_threads() * 4);
     // Each chunk, counting-sorted into its own buffer, with where each digit starts.
-    let pieces: Vec<(Vec<T>, [usize; RADIX + 1])> = values
+    let pieces: Vec<(Vec<T>, Vec<usize>)> = values
         .par_chunks(chunk_len)
         .map(|chunk| {
-            let mut starts = [0_usize; RADIX + 1];
+            let mut starts = vec![0_usize; radix + 1];
             for &value in chunk {
-                starts[digit(key(value), shift) + 1] += 1;
+                starts[digit(key(value), shift, width) + 1] += 1;
             }
-            for index in 0..RADIX {
+            for index in 0..radix {
                 starts[index + 1] += starts[index];
             }
-            let mut next = starts;
+            let mut next = starts.clone();
             let mut sorted = vec![chunk[0]; chunk.len()];
             for &value in chunk {
-                let slot = &mut next[digit(key(value), shift)];
+                let slot = &mut next[digit(key(value), shift, width)];
                 sorted[*slot] = value;
                 *slot += 1;
             }
@@ -90,16 +113,17 @@ where
         })
         .collect();
     // Hand each digit its own slice of `values`, then gather its pieces in chunk order.
-    let mut sizes = [0_usize; RADIX];
-    for (bucket, size) in sizes.iter_mut().enumerate() {
-        *size = pieces
-            .iter()
-            .map(|(_, starts)| starts[bucket + 1] - starts[bucket])
-            .sum();
-    }
-    let mut buckets = Vec::with_capacity(RADIX);
+    let sizes: Vec<usize> = (0..radix)
+        .map(|bucket| {
+            pieces
+                .iter()
+                .map(|(_, starts)| starts[bucket + 1] - starts[bucket])
+                .sum()
+        })
+        .collect();
+    let mut buckets = Vec::with_capacity(radix);
     let mut rest = &mut *values;
-    for size in sizes {
+    for &size in &sizes {
         let (head, tail) = rest.split_at_mut(size);
         buckets.push(head);
         rest = tail;
