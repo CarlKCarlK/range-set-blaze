@@ -29,6 +29,8 @@ mod cpu_radix;
 mod cuda;
 #[cfg(feature = "cutile")]
 mod cutile;
+#[cfg(feature = "hip_nightly_experimental")]
+mod hip;
 mod map_ingest;
 #[cfg(feature = "offload_nightly_experimental")]
 mod offload;
@@ -247,6 +249,22 @@ pub enum Engine {
     /// [`Engine::Cpu`] with every available thread. Runtime launch failures still fail.
     #[cfg(feature = "offload_nightly_experimental")]
     OffloadOrCpu,
+    /// On AMD GPUs, the same Rust radix-sort and range kernels as [`Engine::Offload`],
+    /// launched directly through AMD's HIP runtime: the AMD counterpart of [`Engine::Cuda`].
+    /// Only the ranges come back. Maps sort as [`Engine::Cpu`] does.
+    ///
+    /// *Requires `hip_nightly_experimental`, Linux, and AMD's HIP runtime.*
+    ///
+    /// # Panics
+    ///
+    /// Panics when no HIP GPU is available, for key types without a GPU representation, or
+    /// for more than 2³⁰ values.
+    #[cfg(feature = "hip_nightly_experimental")]
+    Hip,
+    /// [`Engine::Hip`] when its types and device are available; otherwise [`Engine::Cpu`]
+    /// with every available thread.
+    #[cfg(feature = "hip_nightly_experimental")]
+    HipOrCpu,
 }
 
 fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
@@ -309,6 +327,37 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
                 let mut keys: Vec<u64> =
                     pool.install(|| values.par_iter().map(|value| value.encode()).collect());
                 offload::ranges_bits(&mut keys, 64, T::GAP)
+            };
+            let ranges = ranges
+                .into_iter()
+                .map(|(start, end)| T::decode(start)..=T::decode(end));
+            RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
+        }
+        #[cfg(feature = "hip_nightly_experimental")]
+        Engine::Hip | Engine::HipOrCpu => {
+            use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+            if T::KEY_WORDS == 0 || !hip::available() {
+                assert!(
+                    engine == Engine::HipOrCpu,
+                    "Engine::Hip: unsupported key type or no HIP GPU is available"
+                );
+                return from_slice_cpu(values, all_threads());
+            }
+            let pool = thread_pool(all_threads());
+            let ranges = if T::KEY_WORDS == 1 {
+                let keys: Vec<u32> = pool.install(|| {
+                    values
+                        .par_iter()
+                        .map(|value| {
+                            u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32")
+                        })
+                        .collect()
+                });
+                hip::ranges(&keys, 32, T::GAP)
+            } else {
+                let keys: Vec<u64> =
+                    pool.install(|| values.par_iter().map(|value| value.encode()).collect());
+                hip::ranges(&keys, 64, T::GAP)
             };
             let ranges = ranges
                 .into_iter()
@@ -411,6 +460,29 @@ fn all_threads() -> NonZeroUsize {
 
 /// Sorts the slice in place on `threads` threads (Rayon), then finds the ranges with
 /// [`RangeSetBlaze::from_slice`], which needs only one fast pass over sorted input.
+#[cfg(any(
+    feature = "offload_nightly_experimental",
+    feature = "hip_nightly_experimental"
+))]
+/// Ranges of sorted keys, on the host: the same rule as the GPU kernels in
+/// `gpu/offload/ranges.rs`, for inputs the offload and HIP engines don't send to the GPU.
+pub(super) fn host_ranges<K: Copy + Into<u64>>(
+    sorted: &[K],
+    gap: Option<(u64, u64)>,
+) -> Vec<(u64, u64)> {
+    let joins = |left: u64, right: u64| {
+        left == right || left.checked_add(1) == Some(right) || gap == Some((left, right))
+    };
+    let mut ranges: Vec<(u64, u64)> = Vec::new();
+    for key in sorted.iter().map(|&key| key.into()) {
+        match ranges.last_mut() {
+            Some((_, last)) if joins(*last, key) => *last = key,
+            _ => ranges.push((key, key)),
+        }
+    }
+    ranges
+}
+
 fn from_slice_cpu<T: crate::Integer>(values: &mut [T], threads: NonZeroUsize) -> RangeSetBlaze<T> {
     sort_in_place(values, threads);
     RangeSetBlaze::from_slice(&*values)
@@ -1756,6 +1828,13 @@ mod tests {
         #[cfg(feature = "cutile")]
         if gpu_capable && cutile::available() {
             engines.push(Engine::CuTile);
+        }
+        #[cfg(feature = "hip_nightly_experimental")]
+        {
+            engines.push(Engine::HipOrCpu);
+            if gpu_capable && hip::available() {
+                engines.push(Engine::Hip);
+            }
         }
         #[cfg(feature = "offload_nightly_experimental")]
         {

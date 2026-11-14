@@ -56,6 +56,18 @@ const READY: u64 = AGGREGATE | INCLUSIVE;
 /// Count every byte once, using block-local histograms before updating global counts.
 #[offload_kernel]
 pub(super) fn digit_counts<K: Key>(keys: *mut K, len: u32, passes: u32, counts: *mut [u64; 2048]) {
+    digit_counts_body::<K>(keys, len, passes, counts);
+}
+
+/// The body of `digit_counts`, shared by the offload kernel and the HIP entry point.
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
+#[inline(always)]
+pub(super) fn digit_counts_body<K: Key>(
+    keys: *mut K,
+    len: u32,
+    passes: u32,
+    counts: *mut [u64; 2048],
+) {
     // SAFETY: the launch has 256 threads; shared storage has 2048 aligned u32 counters.
     let (tid, block, shared) = unsafe {
         (
@@ -108,6 +120,13 @@ pub(super) fn digit_counts<K: Key>(keys: *mut K, len: u32, passes: u32, counts: 
 /// Initialize this pass's ticket and look-back words before any scatter starts.
 #[offload_kernel]
 fn clear_workspace(workspace: *mut u64, len: u32) {
+    clear_workspace_body(workspace, len);
+}
+
+/// The body of `clear_workspace`, shared by the offload kernel and the HIP entry point.
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
+#[inline(always)]
+pub(super) fn clear_workspace_body(workspace: *mut u64, len: u32) {
     // SAFETY: these intrinsics only read this thread's launch coordinates.
     let index = unsafe { block_idx_x() * BLOCK + thread_idx_x() };
     if index < len {
@@ -121,6 +140,29 @@ fn clear_workspace(workspace: *mut u64, len: u32) {
 /// as in src/gpu/cuda.rs, with generic keys and stdarch/PTX operations here.
 #[offload_kernel]
 pub(super) fn radix_scatter<K: Key>(
+    keys: *mut K,
+    len: u32,
+    shift: u32,
+    digit_bases: *mut u64,
+    bases_offset: u32,
+    status: *mut u64,
+    keys_out: *mut K,
+) {
+    radix_scatter_body::<K>(
+        keys,
+        len,
+        shift,
+        digit_bases,
+        bases_offset,
+        status,
+        keys_out,
+    );
+}
+
+/// The body of `radix_scatter`, shared by the offload kernel and the HIP entry point.
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
+#[inline(always)]
+pub(super) fn radix_scatter_body<K: Key>(
     keys: *mut K,
     len: u32,
     shift: u32,

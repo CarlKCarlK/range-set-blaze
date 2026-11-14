@@ -4,6 +4,8 @@ use std::env::{VarError, var, var_os};
 use std::vec;
 use std::vec::Vec;
 
+use super::host_ranges;
+
 unsafe extern "C" {
     fn rsb_offload_devices() -> i32;
     fn rsb_offload_sort(keys: *mut u64, len: usize);
@@ -207,21 +209,6 @@ fn gpu_ranges<K: Copy + Default + Into<u64>>(
         .iter()
         .map(|&[first, last]| (first.into(), last.into()))
         .collect()
-}
-
-/// Ranges of sorted keys, on the host; the same rule as the GPU's `ranges.rs`.
-fn host_ranges<K: Copy + Into<u64>>(sorted: &[K], gap: Option<(u64, u64)>) -> Vec<(u64, u64)> {
-    let joins = |left: u64, right: u64| {
-        left == right || left.checked_add(1) == Some(right) || gap == Some((left, right))
-    };
-    let mut ranges: Vec<(u64, u64)> = Vec::new();
-    for key in sorted.iter().map(|&key| key.into()) {
-        match ranges.last_mut() {
-            Some((_, last)) if joins(*last, key) => *last = key,
-            _ => ranges.push((key, key)),
-        }
-    }
-    ranges
 }
 
 /// The radix kernels' preconditions: their unsafe code relies on these.

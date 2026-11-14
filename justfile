@@ -28,7 +28,7 @@ check-all:
 ci: clippy test-stable
 
 # Run all nightly CI checks locally
-ci-nightly: test-nightly test-offload
+ci-nightly: test-nightly test-offload check-hip
 
 # ============================================================================
 # Individual Check Commands
@@ -70,6 +70,13 @@ test-offload toolchain=offload_nightly:
     rustfmt +{{toolchain}} --check --edition 2024 src/gpu/offload/native.rs
     cargo +{{toolchain}} test --features offload_nightly_experimental --lib gpu
     cargo +{{toolchain}} clippy --all-targets --features offload_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
+
+# Compiles the HIP engine's AMD kernels and host code. Running it needs an AMD GPU and HIP
+# (libamdhip64); set RANGE_SET_BLAZE_ROCM_LIB to its directory and RANGE_SET_BLAZE_REQUIRE_HIP_GPU=1.
+check-hip toolchain=offload_nightly:
+    rustfmt +{{toolchain}} --check --edition 2024 src/gpu/offload/hip_native.rs
+    cargo +{{toolchain}} check --features hip_nightly_experimental --lib --tests
+    cargo +{{toolchain}} clippy --features hip_nightly_experimental --lib --tests -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Quick check before commit (clippy + basic tests)
 pre-commit: clippy

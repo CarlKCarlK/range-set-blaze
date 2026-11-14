@@ -8,7 +8,8 @@
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
 //! empty when there is no hardware GPU. With the `cuda` feature, a `cuda_ms` column times
 //! `Engine::Cuda`; with the `cutile` feature, a `cutile_ms` column times `Engine::CuTile`.
-//! With `offload_nightly_experimental`, `offload_ms` times `Engine::Offload`.
+//! With `offload_nightly_experimental`, `offload_ms` times `Engine::Offload`; with
+//! `hip_nightly_experimental`, the last column, `hip_ms`, times `Engine::Hip`.
 //!
 //! Each type gets data built within its own range of values, in two workloads:
 //!
@@ -81,7 +82,7 @@ fn main() {
         write!(radix_columns, ",cpu_radix_{count}_ms").expect("writing to a String can't fail");
     }
     println!(
-        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms,cutile_ms,offload_ms,cpu_radix_1_ms{radix_columns}"
+        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms,cutile_ms,offload_ms,cpu_radix_1_ms{radix_columns},hip_ms"
     );
     for n in sizes {
         for workload in [Workload::Distinct, Workload::Duplicates] {
@@ -224,12 +225,16 @@ impl Run<'_> {
         let cutile = Some(shuffled(Engine::CuTile));
         #[cfg(not(feature = "cutile"))]
         let cutile: Option<Duration> = None;
+        #[cfg(feature = "hip_nightly_experimental")]
+        let hip = Some(shuffled(Engine::Hip));
+        #[cfg(not(feature = "hip_nightly_experimental"))]
+        let hip: Option<Duration> = None;
         #[cfg(feature = "offload_nightly_experimental")]
         let offload = Some(shuffled(Engine::Offload));
         #[cfg(not(feature = "offload_nightly_experimental"))]
         let offload: Option<Duration> = None;
         println!(
-            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{},{},{},{:.3}{radix_many}",
+            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{},{},{},{:.3}{radix_many},{}",
             T::NAME,
             values.len(),
             distinct,
@@ -244,6 +249,7 @@ impl Run<'_> {
                 milliseconds(offload)
             )),
             milliseconds(radix_1),
+            hip.map_or_else(String::new, |hip| format!("{:.3}", milliseconds(hip))),
         );
     }
 

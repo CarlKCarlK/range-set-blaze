@@ -68,6 +68,20 @@ pub(super) fn count_starts<K: Key>(
     has_gap: u32,
     counts: *mut u64,
 ) {
+    count_starts_body::<K>(keys, len, gap_left, gap_right, has_gap, counts);
+}
+
+/// The body of `count_starts`, shared by the offload kernel and the HIP entry point.
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
+#[inline(always)]
+pub(super) fn count_starts_body<K: Key>(
+    keys: *mut K,
+    len: u32,
+    gap_left: u64,
+    gap_right: u64,
+    has_gap: u32,
+    counts: *mut u64,
+) {
     let (gap_left, gap_right) = (K::from_u64(gap_left), K::from_u64(gap_right));
     // SAFETY: these intrinsics only read this thread's launch coordinates.
     let (tid, tile) = unsafe { (thread_idx_x(), block_idx_x()) };
@@ -107,6 +121,29 @@ pub(super) fn count_starts<K: Key>(
 /// tile's exclusive start offset from the scanned `count_starts` totals.
 #[offload_kernel]
 pub(super) fn emit_ranges<K: Key>(
+    keys: *mut K,
+    len: u32,
+    gap_left: u64,
+    gap_right: u64,
+    has_gap: u32,
+    tile_offsets: *mut u64,
+    ranges: *mut K,
+) {
+    emit_ranges_body::<K>(
+        keys,
+        len,
+        gap_left,
+        gap_right,
+        has_gap,
+        tile_offsets,
+        ranges,
+    );
+}
+
+/// The body of `emit_ranges`, shared by the offload kernel and the HIP entry point.
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
+#[inline(always)]
+pub(super) fn emit_ranges_body<K: Key>(
     keys: *mut K,
     len: u32,
     gap_left: u64,

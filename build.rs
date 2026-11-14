@@ -30,6 +30,66 @@ fn main() {
     if env::var_os("CARGO_FEATURE_OFFLOAD_NIGHTLY_EXPERIMENTAL").is_some() {
         build_offload();
     }
+    if env::var_os("CARGO_FEATURE_HIP_NIGHTLY_EXPERIMENTAL").is_some() {
+        build_hip();
+    }
+}
+
+/// The kernel sources the HIP engine shares with offload, plus its own crate root.
+const HIP_SOURCES: [&str; 6] = [
+    "hip_native.rs",
+    "key.rs",
+    "radix.rs",
+    "ranges.rs",
+    "device.rs",
+    "ptx.rs",
+];
+
+/// Compiles the shared radix and range kernels for an AMD GPU as a plain code object that
+/// the HIP runtime loads, and links the host against HIP (`libamdhip64`).
+fn build_hip() {
+    println!("cargo:rerun-if-env-changed=DOCS_RS");
+    println!("cargo:rerun-if-env-changed=RANGE_SET_BLAZE_HIP_ARCH");
+    println!("cargo:rerun-if-env-changed=RANGE_SET_BLAZE_ROCM_LIB");
+    let output = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo must set OUT_DIR")).join("hip");
+    fs::create_dir_all(&output).expect("could not create the HIP build directory");
+    let code_object = output.join("amdgcn-amd-amdhsa/release/rsb_hip_native.elf");
+    println!(
+        "cargo:rustc-env=RSB_HIP_CODE_OBJECT={}",
+        code_object.display()
+    );
+    if env::var_os("DOCS_RS").is_some() {
+        // Documentation builds expose the API; an empty code object keeps include_bytes! working.
+        fs::create_dir_all(code_object.parent().expect("has a parent")).expect("could not create");
+        fs::write(&code_object, []).expect("could not write a placeholder code object");
+        return;
+    }
+    let architecture = env::var("RANGE_SET_BLAZE_HIP_ARCH").unwrap_or_else(|_| "gfx1151".into());
+    assert!(
+        architecture.starts_with("gfx")
+            && architecture.len() > 3
+            && architecture[3..].chars().all(|c| c.is_ascii_hexdigit()),
+        "RANGE_SET_BLAZE_HIP_ARCH must name an AMD architecture such as gfx1151"
+    );
+    for name in HIP_SOURCES {
+        println!("cargo:rerun-if-changed=src/gpu/offload/{name}");
+        fs::copy(format!("src/gpu/offload/{name}"), output.join(name))
+            .expect("could not copy a HIP kernel source");
+    }
+    fs::write(output.join("Cargo.toml"), "[package]\nname = \"rsb-hip-native\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[workspace]\n[lib]\npath = \"hip_native.rs\"\ncrate-type = [\"cdylib\"]\n").expect("could not write the HIP build manifest");
+    nested_gpu_build(
+        &output.join("Cargo.toml"),
+        &output,
+        "amdgcn-amd-amdhsa",
+        &format!(
+            "-Ctarget-cpu={architecture} -Cpanic=abort -Zunstable-options --cfg=rsb_offload_amdgpu"
+        ),
+        "HIP kernel compilation failed; see docs/offload.md for the nightly toolchain setup",
+    );
+    let library = env::var("RANGE_SET_BLAZE_ROCM_LIB").unwrap_or_else(|_| "/opt/rocm/lib".into());
+    println!("cargo:rustc-link-search=native={library}");
+    println!("cargo:rustc-link-lib=dylib=amdhip64");
+    println!("cargo:rustc-link-arg=-Wl,-rpath,{library}");
 }
 
 fn run(command: &mut Command) {
@@ -158,6 +218,32 @@ fn compile_device(
     // directory so the nested build never waits on the outer Cargo target-directory lock.
     fs::write(output.join("Cargo.toml"), "[package]\nname = \"rsb-offload-native\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[workspace]\n[lib]\npath = \"native.rs\"\ncrate-type = [\"cdylib\"]\n").expect("could not write GPU build manifest");
     let device_target = output.join("device-target");
+    nested_gpu_build(
+        &output.join("Cargo.toml"),
+        &device_target,
+        target.triple,
+        &format!(
+            "-Ctarget-cpu={architecture} -Cpanic=abort -Zunstable-options {} -Zoffload=Device={}",
+            target.configuration,
+            manifest.display()
+        ),
+        "offload compilation failed; see docs/offload.md for setup instructions",
+    );
+    device_target.join(format!(
+        "{}/release/rsb_offload_native.{}",
+        target.triple, target.extension
+    ))
+}
+
+/// Builds the GPU crate at `manifest` for `triple` into `target_dir`, rebuilding `core`
+/// for the GPU.
+fn nested_gpu_build(
+    manifest: &Path,
+    target_dir: &Path,
+    triple: &str,
+    rustflags: &str,
+    failure: &str,
+) {
     let mut cargo = Command::new(env::var_os("CARGO").expect("Cargo must set CARGO"));
     // Cargo gives this build script the host's `CARGO_CFG_*` and `CARGO_FEATURE_*`
     // variables, and the nested Cargo does not clear ones its own target lacks. Leaked
@@ -171,32 +257,25 @@ fn compile_device(
             cargo.env_remove(key);
         }
     }
-    run(cargo
+    let status = cargo
         .args([
             "build",
             "--release",
             "--lib",
             "--target",
-            target.triple,
+            triple,
             "-Zbuild-std=core",
             "--manifest-path",
         ])
-        .arg(output.join("Cargo.toml"))
-        .env("CARGO_TARGET_DIR", &device_target)
+        .arg(manifest)
+        .env("CARGO_TARGET_DIR", target_dir)
         .env_remove("CARGO_ENCODED_RUSTFLAGS")
         .env_remove("RUSTC_WRAPPER")
         .env_remove("RUSTC_WORKSPACE_WRAPPER")
-        .env(
-            "RUSTFLAGS",
-            format!(
-                "-Ctarget-cpu={architecture} -Cpanic=abort -Zunstable-options {} -Zoffload=Device={}",
-                target.configuration, manifest.display()
-            ),
-        ));
-    device_target.join(format!(
-        "{}/release/rsb_offload_native.{}",
-        target.triple, target.extension
-    ))
+        .env("RUSTFLAGS", rustflags)
+        .status()
+        .expect("could not start the GPU compiler");
+    assert!(status.success(), "{failure}");
 }
 
 fn link_offload(output: &Path, runtime: &Path) {

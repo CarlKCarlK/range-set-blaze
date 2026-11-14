@@ -100,6 +100,8 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
         Engine::CuTile => all_threads(),
         #[cfg(feature = "offload_nightly_experimental")]
         Engine::Offload | Engine::OffloadOrCpu => all_threads(),
+        #[cfg(feature = "hip_nightly_experimental")]
+        Engine::Hip | Engine::HipOrCpu => all_threads(),
     };
     // Only work that needs no `V: Sync` runs on the pool: keys, and values once they are words.
     let pool = thread_pool(threads);
@@ -107,6 +109,14 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
     let value_words = value_words(&pool, values);
     let found = match engine {
         Engine::Cpu(_) | Engine::CpuRadix(_) => ranges_cpu(
+            &pool,
+            keys,
+            values,
+            key_words.as_ref(),
+            value_words.as_ref(),
+        ),
+        #[cfg(feature = "hip_nightly_experimental")]
+        Engine::Hip | Engine::HipOrCpu => ranges_cpu(
             &pool,
             keys,
             values,

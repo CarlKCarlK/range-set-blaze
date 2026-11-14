@@ -74,6 +74,10 @@ cutile = ["shuffled_slices", "dep:cutile"]
 # Experimental NVIDIA/Linux backend using Rust's nightly GPU offload compiler.
 # See docs/offload.md for the toolchain, CUDA toolkit, and runtime requirements.
 offload_nightly_experimental = ["shuffled_slices"]
+# Experimental AMD/Linux backend: the offload engine's Rust kernels, launched directly through
+# AMD's HIP runtime. Needs the same nightly toolchain as offload, plus libamdhip64 (set
+# RANGE_SET_BLAZE_ROCM_LIB to its directory if it isn't /opt/rocm/lib).
+hip_nightly_experimental = ["shuffled_slices"]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
