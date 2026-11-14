@@ -241,9 +241,12 @@ export RANGE_SET_BLAZE_ROCM_LIB=$PREFIX/opt/rocm-7.2.1/lib
 RANGE_SET_BLAZE_REQUIRE_HIP_GPU=1 cargo +nightly-2026-11-12 test --features hip_nightly_experimental --lib gpu
 ```
 
-`just check-hip` (and CI) compile the kernels and host code without an AMD GPU. At 100M
-shuffled `u32` keys on a Radeon 8060S, HIP and offload took about the same time (each
-faster on one of the two workloads), so OpenMP offload adds little over direct launches.
+`just check-hip` (and CI) compile the kernels and host code without an AMD GPU. In the
+November 14 repeated 100M shuffled-duplicates `u32` runs on a Radeon 8060S, HIP took
+222–238 ms and offload took 273–275 ms. These end-to-end measurements include different
+host transfer and runtime paths; they do not isolate OpenMP launch overhead. See
+[CPU and GPU engine results](../experiments/GPU_ENGINES_RESULTS.md) for the CPU baselines,
+run counts, and limitations.
 
 ## CPU baselines
 
