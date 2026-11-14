@@ -1,0 +1,5 @@
+Benchmark date: 2026-11-13
+Machine: HP ZBook Ultra G1a, Ryzen AI Max+ PRO 395, Radeon 8060S; native Windows, Vulkan (WGPU_BACKEND=vulkan), managed over SSH
+Binary: gpu_ingest.exe built earlier on 2026-11-13 by the laptop agent with cargo +1.99.1 build --release --locked --features shuffled_slices (includes the wgpu sorter/workspace cache; wgpu code unchanged since). A rebuild attempt in this session could not reach the WSL source path, so the existing binary was run.
+Run: gpu_ingest.exe --cpu 16 --cpu 32 --type u32 100000000
+adapter="AMD Radeon(TM) 8060S Graphics" backend=Vulkan device_type=IntegratedGpu

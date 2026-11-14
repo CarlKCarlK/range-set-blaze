@@ -1,0 +1,17 @@
+=========================================
+RUSTC-CODEGEN-CUDA: range-set-blaze
+=========================================
+
+Detected GPU arch: sm_86 (via nvidia-smi)
+
+This is the proper cargo workflow:
+  CARGO_ENCODED_RUSTFLAGS=<cuda-oxide flags> CARGO_PROFILE_*=<pins> cargo run
+  (a custom --profile takes the pins as --config profile.<name>.<key>=<value>)
+
+Building and running range-set-blaze (bin: gpu_map_ingest)...
+
+   Compiling range-set-blaze v0.8.0 (/home/carlk/programs/range-set-blaze)
+    Finished `release` profile [optimized] target(s) in 10.77s
+     Running `target/release/gpu_map_ingest 1000000 10000000 100000000`
+adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
+cold: context 37.8 ms, shader pipelines 0.9 ms

@@ -73,7 +73,9 @@ jobs:
         if: matrix.suite == 'nightly-all-features'
         run: |
           cargo check --tests --features "float_nightly_experimental"
-          cargo test --verbose --all-features
+          # Offload has a separate newer-nightly job. cuda and cutile are left out: both depend
+          # on cuda-bindings, whose build script needs a CUDA 13 toolkit the hosted runners lack.
+          cargo test --verbose --features std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental
 
   docs_and_audit:
     name: Check docs and audit dependencies
@@ -94,7 +96,7 @@ jobs:
           tool: cargo-deadlinks,cargo-audit,cargo-deny
       - name: Check dead links in documentation
         run: |
-          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-10-12 doc --no-deps --all-features
+          DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-10-12 doc --no-deps --features std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental
           RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
       - name: Audit dependencies (security & license)
         run: |
@@ -119,6 +121,52 @@ jobs:
         run: |
           cargo miri setup
           cargo miri test --test float_tests
+
+  gpu_software:
+    # Runs the GPU pipeline tests on Mesa's software Vulkan driver (lavapipe), so CI exercises the
+    # from_shuffled_slice GPU code without a GPU. Only tests use a software adapter; real use never
+    # does. RANGE_SET_BLAZE_REQUIRE_TEST_GPU makes the tests fail rather than skip if the driver is
+    # missing.
+    name: Test GPU pipeline on software Vulkan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@1.99.0
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+      - name: Install Mesa's software Vulkan driver
+        run: sudo apt-get update && sudo apt-get install -y mesa-vulkan-drivers
+      - name: Run the GPU tests
+        env:
+          RANGE_SET_BLAZE_REQUIRE_TEST_GPU: "1"
+        run: cargo test --verbose --features shuffled_slices --lib gpu -- --nocapture
+
+  gpu_offload:
+    name: Build Rust GPU offload and test CPU fallback
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install offload compiler components
+        run: rustup toolchain install nightly-2026-11-12 --component offload,llvm-tools,llvm-bitcode-linker,rust-src,clippy,rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: gpu-offload
+      - name: Extract the CUDA assembler without installing the full toolkit
+        run: |
+          sudo apt-get update
+          mkdir -p "$RUNNER_TEMP/offload-cuda"
+          cd "$RUNNER_TEMP/offload-cuda"
+          apt-get download nvidia-cuda-toolkit
+          dpkg-deb -x ./*.deb .
+          # The package puts ptxas in usr/bin; usr/lib/nvidia-cuda-toolkit/bin holds only cicc.
+          echo "$RUNNER_TEMP/offload-cuda/usr/bin" >> "$GITHUB_PATH"
+      - name: Test offload feature without a GPU
+        run: |
+          rustfmt +nightly-2026-11-12 --check --edition 2024 src/gpu/offload/native.rs
+          cargo +nightly-2026-11-12 test --features offload_nightly_experimental --lib gpu
+          cargo +nightly-2026-11-12 clippy --all-targets --features offload_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
   test_32_bit_linux:
     name: Test on 32-bit Ubuntu
@@ -172,6 +220,10 @@ jobs:
       - name: Setup WASM/unknown
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test WASM/unknown
+        env:
+          # wasm-bindgen-test-runner's default is 20 seconds; the whole suite runs in one browser
+          # page, and newer runners (wasm-bindgen 0.2.129, pulled in by wgpu) exceeded it.
+          WASM_BINDGEN_TEST_TIMEOUT: "120"
         run: |
           wasm-pack test --chrome --headless -- --no-default-features --verbose
           wasm-pack test --chrome --headless -- --features std --verbose

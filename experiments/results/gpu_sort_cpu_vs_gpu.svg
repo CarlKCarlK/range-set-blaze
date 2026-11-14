@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+<style>
+text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; fill: #222; }
+.tick { font-size: 14px; } .label { font-size: 17px; } .legend { font-size: 15px; }
+</style>
+<rect width="100%" height="100%" fill="white"/>
+<text x="600.0" y="35" text-anchor="middle" font-size="24" font-weight="600">Sorting random u32 values: CPU vs GPU</text>
+<text x="600.0" y="59" text-anchor="middle" font-size="14" fill="#555">Median wall time; NVIDIA GeForce RTX 3060, wgpu Vulkan, Lampshade radix sort</text>
+<rect x="582.88" y="78" width="100.24" height="550" fill="#d8d8d8" opacity="0.28"/>
+<line x1="683.12" y1="78" x2="683.12" y2="628" stroke="#666" stroke-width="1.4" stroke-dasharray="6 5"/>
+<text x="633.00" y="100" text-anchor="middle" font-size="14" fill="#444">crossover bracket</text>
+<text x="633.00" y="118" text-anchor="middle" font-size="14" fill="#444">30k–100k</text>
+<text x="691.12" y="139" font-size="13" fill="#555">first measured GPU win</text>
+<line x1="108" y1="628.00" x2="1158" y2="628.00" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="633.00" text-anchor="end">0.1 µs</text>
+<line x1="108" y1="604.35" x2="1158" y2="604.35" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="573.08" x2="1158" y2="573.08" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="549.43" x2="1158" y2="549.43" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="554.43" text-anchor="end">0.001 ms</text>
+<line x1="108" y1="525.78" x2="1158" y2="525.78" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="494.51" x2="1158" y2="494.51" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="470.86" x2="1158" y2="470.86" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="475.86" text-anchor="end">0.01 ms</text>
+<line x1="108" y1="447.20" x2="1158" y2="447.20" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="415.94" x2="1158" y2="415.94" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="392.29" x2="1158" y2="392.29" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="397.29" text-anchor="end">0.1 ms</text>
+<line x1="108" y1="368.63" x2="1158" y2="368.63" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="337.37" x2="1158" y2="337.37" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="313.71" x2="1158" y2="313.71" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="318.71" text-anchor="end">1 ms</text>
+<line x1="108" y1="290.06" x2="1158" y2="290.06" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="258.80" x2="1158" y2="258.80" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="235.14" x2="1158" y2="235.14" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="240.14" text-anchor="end">10 ms</text>
+<line x1="108" y1="211.49" x2="1158" y2="211.49" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="180.22" x2="1158" y2="180.22" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="156.57" x2="1158" y2="156.57" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="161.57" text-anchor="end">100 ms</text>
+<line x1="108" y1="132.92" x2="1158" y2="132.92" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="101.65" x2="1158" y2="101.65" stroke="#e8e8e8" stroke-width="0.7"/>
+<line x1="108" y1="78.00" x2="1158" y2="78.00" stroke="#c9c9c9" stroke-width="1.0"/>
+<text class="tick" x="96" y="83.00" text-anchor="end">1000 ms</text>
+<line x1="108.00" y1="78" x2="108.00" y2="628" stroke="#d5d5d5" stroke-width="1"/>
+<text class="tick" x="108.00" y="653" text-anchor="middle">100</text>
+<line x1="299.71" y1="78" x2="299.71" y2="628" stroke="#d5d5d5" stroke-width="1"/>
+<text class="tick" x="299.71" y="653" text-anchor="middle">1k</text>
+<line x1="491.41" y1="78" x2="491.41" y2="628" stroke="#d5d5d5" stroke-width="1"/>
+<text class="tick" x="491.41" y="653" text-anchor="middle">10k</text>
+<line x1="683.12" y1="78" x2="683.12" y2="628" stroke="#d5d5d5" stroke-width="1"/>
+<text class="tick" x="683.12" y="653" text-anchor="middle">100k</text>
+<line x1="874.83" y1="78" x2="874.83" y2="628" stroke="#d5d5d5" stroke-width="1"/>
+<text class="tick" x="874.83" y="653" text-anchor="middle">1M</text>
+<line x1="1066.53" y1="78" x2="1066.53" y2="628" stroke="#d5d5d5" stroke-width="1"/>
+<text class="tick" x="1066.53" y="653" text-anchor="middle">10M</text>
+<line x1="108" y1="628" x2="1158" y2="628" stroke="#333" stroke-width="1.5"/>
+<line x1="108" y1="78" x2="108" y2="628" stroke="#333" stroke-width="1.5"/>
+<text class="label" x="633.0" y="692" text-anchor="middle">Number of u32 values (log scale)</text>
+<text class="label" x="26" y="353.0" text-anchor="middle" transform="rotate(-90 26 353.0)">Elapsed time (ms, log scale)</text>
+<path d="M 108.00 590.51 L 199.47 535.59 L 299.71 499.66 L 391.17 459.13 L 491.41 413.06 L 582.88 369.32 L 683.12 320.51 L 774.59 280.20 L 874.83 236.41 L 966.29 196.88 L 1066.53 153.46 L 1158.00 110.40" fill="none" stroke="#1f4e79" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="108.00" cy="590.51" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="199.47" cy="535.59" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="299.71" cy="499.66" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="391.17" cy="459.13" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="491.41" cy="413.06" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="582.88" cy="369.32" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="683.12" cy="320.51" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="774.59" cy="280.20" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="874.83" cy="236.41" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="966.29" cy="196.88" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="1066.53" cy="153.46" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<circle cx="1158.00" cy="110.40" r="3.8" fill="white" stroke="#1f4e79" stroke-width="2.2"/>
+<path d="M 108.00 368.79 L 199.47 366.28 L 299.71 364.27 L 391.17 365.38 L 491.41 363.95 L 582.88 361.81 L 683.12 355.37 L 774.59 326.85 L 874.83 299.96 L 966.29 264.48 L 1066.53 226.64 L 1158.00 163.20" fill="none" stroke="#c44e52" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="108.00" cy="368.79" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="199.47" cy="366.28" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="299.71" cy="364.27" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="391.17" cy="365.38" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="491.41" cy="363.95" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="582.88" cy="361.81" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="683.12" cy="355.37" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="774.59" cy="326.85" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="874.83" cy="299.96" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="966.29" cy="264.48" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="1066.53" cy="226.64" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<circle cx="1158.00" cy="163.20" r="3.8" fill="white" stroke="#c44e52" stroke-width="2.2"/>
+<path d="M 108.00 369.48 L 199.47 369.29 L 299.71 367.99 L 391.17 365.85 L 491.41 366.98 L 582.88 365.46 L 683.12 361.95 L 774.59 347.76 L 874.83 324.21 L 966.29 298.95 L 1066.53 263.20 L 1158.00 204.16" fill="none" stroke="#4c956c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="108.00" cy="369.48" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="199.47" cy="369.29" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="299.71" cy="367.99" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="391.17" cy="365.85" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="491.41" cy="366.98" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="582.88" cy="365.46" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="683.12" cy="361.95" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="774.59" cy="347.76" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="874.83" cy="324.21" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="966.29" cy="298.95" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="1066.53" cy="263.20" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<circle cx="1158.00" cy="204.16" r="3.8" fill="white" stroke="#4c956c" stroke-width="2.2"/>
+<rect x="116" y="523" width="222" height="91" rx="4" fill="white" opacity="0.92" stroke="#bbb"/>
+<line x1="126" y1="546" x2="160" y2="546" stroke="#1f4e79" stroke-width="3"/>
+<circle cx="143" cy="546" r="3.4" fill="white" stroke="#1f4e79" stroke-width="2"/>
+<text class="legend" x="171" y="551">CPU sort_unstable</text>
+<line x1="126" y1="573" x2="160" y2="573" stroke="#c44e52" stroke-width="3"/>
+<circle cx="143" cy="573" r="3.4" fill="white" stroke="#c44e52" stroke-width="2"/>
+<text class="legend" x="171" y="578">GPU end-to-end</text>
+<line x1="126" y1="600" x2="160" y2="600" stroke="#4c956c" stroke-width="3"/>
+<circle cx="143" cy="600" r="3.4" fill="white" stroke="#4c956c" stroke-width="2"/>
+<text class="legend" x="171" y="605">GPU radix sort only</text>
+</svg>

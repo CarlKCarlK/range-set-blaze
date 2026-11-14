@@ -1,0 +1,87 @@
+Date: 2026-11-13 (America/Los_Angeles)
+Source: aa4c21a76d1263d3d31008b8109b73bcf4b7c211
+Hardware: Ryzen 9 7950X; WSL2; Rust 1.99.1; portable build flags
+Input: 1M u32 values, average clump width 1000; distribution differs from gpu_ingest
+Command: cargo +1.99.1 bench --locked --bench bench -- ^ingest_clumps_simd_levels_u32/.*/1000$ --warm-up-time 1 --measurement-time 2
+Criterion: 20 samples per series; exported slope estimates and 95 percent confidence intervals
+
+   Compiling memchr v2.8.3
+   Compiling smallvec v1.15.2
+   Compiling futures-util v0.3.34
+   Compiling bytemuck v1.25.2
+   Compiling range-set-blaze v0.8.0 (/home/carlk/programs/range-set-blaze)
+   Compiling half v2.7.1
+   Compiling roaring v0.11.5
+   Compiling inplace-vec-builder v0.1.1
+   Compiling range-set v0.1.1
+   Compiling range-collections v0.4.6
+   Compiling aho-corasick v1.1.4
+   Compiling serde_json v1.0.150
+   Compiling ciborium-ll v0.2.2
+   Compiling ciborium v0.2.2
+   Compiling tinytemplate v1.2.1
+   Compiling trybuild v1.0.117
+   Compiling regex-automata v0.4.14
+   Compiling js-sys v0.3.106
+   Compiling regex v1.12.4
+   Compiling env_filter v2.0.0
+   Compiling criterion v0.5.1
+   Compiling env_logger v0.11.11
+   Compiling quickcheck v1.1.0
+   Compiling wasm-bindgen-futures v0.4.79
+   Compiling wasm-bindgen-test v0.3.79
+    Finished `bench` profile [optimized] target(s) in 12.17s
+     Running benches/bench.rs (target/release/deps/bench-3ce9c3863786d433)
+Benchmarking ingest_clumps_simd_levels_u32/from_iter/1000
+Benchmarking ingest_clumps_simd_levels_u32/from_iter/1000: Warming up for 1.0000 s
+Benchmarking ingest_clumps_simd_levels_u32/from_iter/1000: Collecting 20 samples in estimated 2.0478 s (2520 iterations)
+Benchmarking ingest_clumps_simd_levels_u32/from_iter/1000: Analyzing
+ingest_clumps_simd_levels_u32/from_iter/1000
+                        time:   [845.59 µs 853.62 µs 859.61 µs]
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@fallback/1000
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@fallback/1000: Warming up for 1.0000 s
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@fallback/1000: Collecting 20 samples in estimated 2.0122 s (11k iterations)
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@fallback/1000: Analyzing
+ingest_clumps_simd_levels_u32/from_slice@fallback/1000
+                        time:   [178.36 µs 179.53 µs 181.09 µs]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high severe
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse2/1000
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse2/1000: Warming up for 1.0000 s
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse2/1000: Collecting 20 samples in estimated 2.0189 s (18k iterations)
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse2/1000: Analyzing
+ingest_clumps_simd_levels_u32/from_slice@sse2/1000
+                        time:   [108.66 µs 111.48 µs 116.92 µs]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high severe
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse4.2/1000
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse4.2/1000: Warming up for 1.0000 s
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse4.2/1000: Collecting 20 samples in estimated 2.0216 s (18k iterations)
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@sse4.2/1000: Analyzing
+ingest_clumps_simd_levels_u32/from_slice@sse4.2/1000
+                        time:   [106.78 µs 110.10 µs 113.96 µs]
+Found 2 outliers among 20 measurements (10.00%)
+  2 (10.00%) high severe
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx2/1000
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx2/1000: Warming up for 1.0000 s
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx2/1000: Collecting 20 samples in estimated 2.0128 s (22k iterations)
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx2/1000: Analyzing
+ingest_clumps_simd_levels_u32/from_slice@avx2/1000
+                        time:   [90.979 µs 91.960 µs 92.978 µs]
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx512/1000
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx512/1000: Warming up for 1.0000 s
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx512/1000: Collecting 20 samples in estimated 2.0172 s (21k iterations)
+Benchmarking ingest_clumps_simd_levels_u32/from_slice@avx512/1000: Analyzing
+ingest_clumps_simd_levels_u32/from_slice@avx512/1000
+                        time:   [95.032 µs 95.740 µs 96.687 µs]
+Found 3 outliers among 20 measurements (15.00%)
+  2 (10.00%) high mild
+  1 (5.00%) high severe
+Benchmarking ingest_clumps_simd_levels_u32/from_slice (auto: avx512)/1000
+Benchmarking ingest_clumps_simd_levels_u32/from_slice (auto: avx512)/1000: Warming up for 1.0000 s
+Benchmarking ingest_clumps_simd_levels_u32/from_slice (auto: avx512)/1000: Collecting 20 samples in estimated 2.0041 s (21k iterations)
+Benchmarking ingest_clumps_simd_levels_u32/from_slice (auto: avx512)/1000: Analyzing
+ingest_clumps_simd_levels_u32/from_slice (auto: avx512)/1000
+                        time:   [94.528 µs 94.751 µs 94.957 µs]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high mild

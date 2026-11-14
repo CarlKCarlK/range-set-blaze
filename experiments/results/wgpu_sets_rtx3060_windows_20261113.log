@@ -1,0 +1,10 @@
+Date: 2026-11-13 (America/Los_Angeles)
+Environment: native Windows, managed from WSL2; RTX 3060, Ryzen 9 7950X
+Rust toolchain: 1.99.1
+Build: cargo +1.99.1 build --release --locked --features shuffled_slices --bin gpu_ingest
+Run: gpu_ingest.exe --cpu 16 --cpu 32 --type u32 10000 100000 1000000
+Implementation: Baseline
+Method: end-to-end construction; >=1 second warmup, median of five samples, correctness checked against CPU
+
+adapter="NVIDIA GeForce RTX 3060" backend=Vulkan device_type=DiscreteGpu
+available threads=32

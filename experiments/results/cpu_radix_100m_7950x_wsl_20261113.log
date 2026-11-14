@@ -1,0 +1,6 @@
+Benchmark date: 2026-11-13
+CPU: AMD Ryzen 9 7950X, 32 logical processors, WSL2
+Build: cargo build --release --features shuffled_slices --bin gpu_ingest
+Run: gpu_ingest --cpu 16 --cpu 32 --type u32 100000000
+cpu_radix_*: Engine::CpuRadix (safe parallel radix: top-digit split, then per-bucket LSD with up to 11-bit digits and one counting read). cpu_*: Engine::Cpu (par_sort_unstable).
+A spot rerun after a lint-only change gave cpu_radix_16 187.8 ms distinct, 236.8 ms duplicates.

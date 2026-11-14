@@ -6,6 +6,10 @@
 # Pinned nightly, mirroring ci.yml. Keeps a new upstream Clippy lint (or other
 # nightly change) from silently breaking local/CI checks. Bump deliberately.
 nightly := "nightly-2026-10-12"
+# std::offload needs a newer compiler and NVIDIA toolkit, separately from portable CI.
+offload_nightly := "nightly-2026-11-12"
+# Keep the existing all-features coverage; offload alone uses its dedicated newer nightly.
+non_offload_features := "std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental,cuda,cutile"
 
 # MSRV: keep in sync with `rust-version` in Cargo.toml and the `test_msrv` job in ci.yml.
 msrv := "1.89"
@@ -24,7 +28,7 @@ check-all:
 ci: clippy test-stable
 
 # Run all nightly CI checks locally
-ci-nightly: test-nightly
+ci-nightly: test-nightly test-offload
 
 # ============================================================================
 # Individual Check Commands
@@ -33,6 +37,7 @@ ci-nightly: test-nightly
 # Run clippy with CI settings (matches CI exactly, using the pinned toolchain in rust-toolchain.toml)
 clippy:
     cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
+    cargo clippy --verbose --all-targets --features shuffled_slices -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Preview lints on the newest stable toolchain, ignoring the pinned CI toolchain.
 # Run this deliberately when evaluating a Rust-toolchain update; it is not part of
@@ -47,6 +52,7 @@ test-stable:
     cargo test --verbose --release
     cargo test --verbose --no-default-features
     cargo test --verbose --release --no-default-features
+    cargo test --verbose --features shuffled_slices
 
 # Run nightly-only tests (float_nightly_experimental, cursor_nightly_experimental)
 # Uses `cargo +{{nightly}}` (not `rustup override set`) so this is safe to run
@@ -56,7 +62,14 @@ test-nightly:
     cargo +{{nightly}} test --verbose --features cursor_nightly_experimental
     cargo +{{nightly}} test --verbose --no-default-features --features cursor_nightly_experimental
     cargo +{{nightly}} clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
-    cargo +{{nightly}} test --verbose --all-features
+    cargo +{{nightly}} test --verbose --features {{non_offload_features}}
+
+# Builds real GPU kernels; tests CPU fallback when no GPU is installed. Set
+# RANGE_SET_BLAZE_REQUIRE_OFFLOAD_GPU=1 to require hardware execution (docs/offload.md).
+test-offload toolchain=offload_nightly:
+    rustfmt +{{toolchain}} --check --edition 2024 src/gpu/offload/native.rs
+    cargo +{{toolchain}} test --features offload_nightly_experimental --lib gpu
+    cargo +{{toolchain}} clippy --all-targets --features offload_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Quick check before commit (clippy + basic tests)
 pre-commit: clippy
@@ -70,16 +83,16 @@ pre-commit: clippy
 # included, and rustdoc labels feature-gated items with their required feature.
 # Nightly is required by the optional float, cursor, and `doc_cfg` features.
 show-docs:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --open --all-features
+    DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --open --all-features
 
 # Rebuild the docs (same features as `show-docs`) without opening a browser
 update-docs:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --all-features
+    DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --all-features
 
 # Check documentation for dead links (requires cargo-deadlinks)
 doc-links:
     cargo install cargo-deadlinks
-    RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --all-features
+    DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --all-features
     RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
 
 # Audit dependencies for security and license issues (requires cargo-audit and cargo-deny)
@@ -94,7 +107,7 @@ publish-dry:
 
 # Test publishing with all features
 publish-dry-all:
-    cargo +{{nightly}} publish --all-features --dry-run
+    cargo +{{offload_nightly}} publish --all-features --dry-run
 
 # Full local CI simulation (no WASM/embedded)
 ci-full: clippy test-stable doc-links audit publish-dry-all

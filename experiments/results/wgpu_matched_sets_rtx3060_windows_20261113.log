@@ -1,0 +1,10 @@
+Date: 2026-11-13 (America/Los_Angeles)
+Source: aa4c21a76d1263d3d31008b8109b73bcf4b7c211; no library changes during this run
+Hardware: Ryzen 9 7950X (16 cores / 32 threads), RTX 3060
+Method: end-to-end set construction, >=1 second warmup, median of five samples; correctness compared with CPU
+Environment: native Windows, Vulkan, managed from WSL2
+Rust: 1.99.1; --release --locked --features shuffled_slices
+Run: gpu_ingest.exe --cpu 16 --cpu 32 --type u32 1000000
+
+adapter="NVIDIA GeForce RTX 3060" backend=Vulkan device_type=DiscreteGpu
+available threads=32

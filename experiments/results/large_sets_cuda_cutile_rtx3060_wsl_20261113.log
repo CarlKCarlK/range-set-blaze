@@ -1,0 +1,16 @@
+Benchmark date: 2026-11-13 (America/Los_Angeles)
+GPU: NVIDIA GeForce RTX 3060 (sm_86), WSL2; CPU: AMD Ryzen 9 7950X, 32 logical processors
+Run: cargo oxide run --features cuda,cutile --bin gpu_ingest -- --cpu 16 --cpu 32 --type u32 10000000 100000000
+   Compiling cuda-bindings v0.5.0 (https://github.com/NVIDIA/cuda-rust.git?rev=ad0a42c8e5a161ca850ec819cdc7e90e9a88809a#ad0a42c8)
+   Compiling range-set-blaze v0.8.0 (/home/carlk/programs/range-set-blaze)
+   Compiling cuda-core v0.5.0 (https://github.com/NVIDIA/cuda-rust.git?rev=ad0a42c8e5a161ca850ec819cdc7e90e9a88809a#ad0a42c8)
+   Compiling cuda-async v0.5.0 (https://github.com/NVIDIA/cuda-rust.git?rev=ad0a42c8e5a161ca850ec819cdc7e90e9a88809a#ad0a42c8)
+   Compiling cuda-host v0.2.1 (https://github.com/NVIDIA/cuda-rust.git?rev=ad0a42c8e5a161ca850ec819cdc7e90e9a88809a#ad0a42c8)
+   Compiling cutile-compiler v0.5.0 (https://github.com/NVIDIA/cuda-rust.git?rev=ad0a42c8e5a161ca850ec819cdc7e90e9a88809a#ad0a42c8)
+   Compiling cutile-macro v0.5.0 (https://github.com/NVIDIA/cuda-rust.git?rev=ad0a42c8e5a161ca850ec819cdc7e90e9a88809a#ad0a42c8)
+   Compiling cutile v0.5.0 (https://github.com/NVIDIA/cuda-rust.git?rev=ad0a42c8e5a161ca850ec819cdc7e90e9a88809a#ad0a42c8)
+    Finished `release` profile [optimized] target(s) in 29.05s
+     Running `target/release/gpu_ingest --cpu 16 --cpu 32 --type u32 10000000 100000000`
+adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+status=0
