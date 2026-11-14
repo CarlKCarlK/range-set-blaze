@@ -33,36 +33,43 @@ correctness review of the kernels.
 - Full reproduction still needs per-build source/lockfile identity, compiler,
   driver/runtime versions, backend, power state, and individual sample durations.
 
-## Branch integration plan
+## Branch integration status
 
-1. Review and commit the documentation corrections on `gpu-on-simd`.
-2. Prepare PR #38's title and description around the current
+The documentation review is committed as `b97205e7` on `gpu-on-simd`. Inspection
+of the actual laptop found `amd-gpu-portability` at `fb0bfa0b`, six commits ahead
+of its published branch, with 10 modified tracked files and 3 untracked Rust
+files. All 13 files were compared byte-for-byte with desktop Git history: each
+matches either the current implementation or a historical version. No unique
+source content was found among them.
+
+The laptop's committed history was imported into `review/amd-laptop-committed`.
+The local `review/amd-gpu-integration` branch merges it with `b97205e7` without
+conflicts and updates the historical AMD planning documents. Save the historical
+working-file copies in a named stash before advancing the laptop branch to this
+integration; do not pop that stash over the newer implementation.
+
+## Remaining integration work
+
+1. Prepare PR #38's title and description around the current
    `from_shuffled_slice` / `from_shuffled_slices` API and `shuffled_slices` feature,
    including CPU comparison/radix, wgpu, CUDA-Oxide, cuTile, offload, and HIP.
    Its present description still names the earlier in-place API and engines.
    Keep existing public-API changes visible to reviewers; this review adds none.
-3. Inspect the actual laptop worktree before integration. PR #39's discussion
-   records a laptop-local merge at `8cb9dd21`, while its published head and the
-   desktop branch remain `0852f9db`. The desktop's stale branch is not proof of
-   the laptop's current state. Fetch and inspect local changes and commits before
-   merging the reviewed `gpu-on-simd` commit there. Avoid overwriting or resetting
-   laptop work.
-4. Validate the resulting branch. Run `just check-all` before pushing; record the
+2. Validate the resulting branch. Run `just check-all` before pushing; record the
    exact merged commit and distinguish hardware checks from hosted CI. Confirm
    GPU-required offload/HIP correctness on the laptop with its existing runtime
    environment before claiming hardware coverage for that merged revision.
-5. Update the AMD handoff and portability spec to reflect completed measurements,
-   then prepare PR #39's description around the remaining branch delta. Its
-   published delta currently consists of two historical planning documents.
+3. Prepare PR #39's description around the remaining branch delta, including the
+   preserved historical laptop report and updated handoff documents. Its
+   published delta previously consisted of two historical planning documents.
    Decide whether keeping that PR serves a purpose after synchronization.
-6. Inspect `~/programs/range-set-blaze-hip` for unique commits, uncommitted changes,
+4. Inspect `~/programs/range-set-blaze-hip` for unique commits, uncommitted changes,
    and results before proposing cleanup. Keep runner scripts and raw output under
    `/mnt/c/deldir/rsb-gpu-bench/`.
 
-The local read-only merge preview of `55540f3f` and `0852f9db` found no conflicts:
-the AMD-only commit adds two spec files. It does not validate the laptop-local
-merge or a future merge involving the documentation corrections. Neither PR has
-been merged or edited as part of this review.
+Neither PR has been merged or edited as part of this review. The historical
+laptop work is preserved through merge ancestry, not replaced by the desktop's
+stale local `amd-gpu-portability` ref.
 
 ## Follow-up measurements
 
