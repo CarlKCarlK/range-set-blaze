@@ -5,6 +5,8 @@
 #![feature(gpu_offload)]
 #![cfg_attr(target_arch = "nvptx64", feature(stdarch_nvptx, abi_gpu_kernel))]
 #![cfg_attr(target_arch = "amdgpu", feature(stdarch_amdgpu, abi_gpu_kernel))]
+#![cfg_attr(target_arch = "amdgpu", feature(core_intrinsics, gpu_intrinsics))]
+#![cfg_attr(target_arch = "amdgpu", allow(internal_features))]
 #![cfg_attr(target_arch = "nvptx64", feature(asm_experimental_arch))]
 
 #[cfg(target_os = "linux")]
@@ -26,7 +28,6 @@ use resident::DeviceBuffer;
 mod device;
 #[cfg(target_arch = "nvptx64")]
 mod ptx;
-#[cfg(not(rsb_offload_amdgpu))]
 mod radix;
 
 const BLOCK_SIZE: u32 = 256;

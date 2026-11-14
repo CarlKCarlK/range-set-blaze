@@ -1,14 +1,12 @@
 //! Host adapter for the separately compiled, core-only Rust offload kernels.
 
 use std::env::{VarError, var, var_os};
-#[cfg(not(rsb_offload_amdgpu))]
 use std::vec;
 use std::vec::Vec;
 
 unsafe extern "C" {
     fn rsb_offload_devices() -> i32;
     fn rsb_offload_sort(keys: *mut u64, len: usize);
-    #[cfg(not(rsb_offload_amdgpu))]
     fn rsb_offload_radix_sort(
         keys: *mut u64,
         scratch: *mut u64,
@@ -46,17 +44,12 @@ pub(super) fn sort_bits(keys: &mut Vec<u64>, bits: u32) {
         Ok(value) if value == "radix" => true,
         Ok(value) if value == "bitonic" => false,
         Ok(_) => panic!("RANGE_SET_BLAZE_OFFLOAD_SORT must be radix or bitonic"),
-        Err(VarError::NotPresent) => !cfg!(rsb_offload_amdgpu) && len > 1024,
+        Err(VarError::NotPresent) => len > 1024,
         Err(error) => panic!("invalid offload sort setting: {error}"),
     };
     if use_radix {
-        #[cfg(not(rsb_offload_amdgpu))]
-        {
-            sort_radix(keys, bits);
-            return;
-        }
-        #[cfg(rsb_offload_amdgpu)]
-        panic!("AMD offload currently supports bitonic sort; radix is not implemented yet");
+        sort_radix(keys, bits);
+        return;
     }
     let padded = len
         .checked_next_power_of_two()
@@ -73,7 +66,6 @@ pub(super) fn sort_bits(keys: &mut Vec<u64>, bits: u32) {
     keys.truncate(len);
 }
 
-#[cfg(not(rsb_offload_amdgpu))]
 fn sort_radix(keys: &mut [u64], bits: u32) {
     assert!(
         matches!(bits, 32 | 64),
@@ -108,7 +100,6 @@ mod tests {
     use crate::{Engine, RangeMapBlaze, RangeSetBlaze};
 
     #[test]
-    #[cfg(not(rsb_offload_amdgpu))]
     fn radix_matches_cpu_across_tiles_and_constant_bytes() {
         if !available() {
             return;

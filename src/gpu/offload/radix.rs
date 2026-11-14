@@ -2,34 +2,46 @@
 //! Kernel pointers refer to complete allocations held by DeviceBuffer; offload's
 //! pointer-argument mapping only needs to look up their already-associated base addresses.
 
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use super::device;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use super::device::{block_idx_x, sync_block, thread_idx_x};
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 use super::resident::DeviceBuffer;
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 use core::offload::offload;
 use core::offload::offload_kernel;
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 use core::slice::from_raw_parts_mut;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use core::sync::atomic::{AtomicU64, Ordering};
 
 const BLOCK: u32 = 256;
 const RADIX: u32 = 256;
 const TILE: u32 = 4096;
-#[cfg(target_arch = "nvptx64")]
+// Shared-memory bytes per kernel. NVIDIA declares them statically in PTX; AMD
+// allocates them at launch (`dyn_cache`), so the host passes these sizes there.
+const COUNTS_SHARED: usize = 8192;
+const SCATTER_SHARED: usize = 43048;
+#[cfg(target_os = "linux")]
+const fn launch_shared(bytes: usize) -> u32 {
+    if cfg!(rsb_offload_amdgpu) {
+        bytes as u32
+    } else {
+        0
+    }
+}
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 const WARPS: u32 = 8;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 const WARP_ITEMS: u32 = 512;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 const WARP_ROUNDS: u32 = 16;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 const AGGREGATE: u64 = 1 << 32;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 const INCLUSIVE: u64 = 2 << 32;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 const READY: u64 = AGGREGATE | INCLUSIVE;
 
 /// Count every byte once, using block-local histograms before updating global counts.
@@ -40,7 +52,7 @@ fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048])
         (
             thread_idx_x(),
             block_idx_x(),
-            device::shared::<8192>().cast::<u32>(),
+            device::shared::<COUNTS_SHARED>().cast::<u32>(),
         )
     };
     for pass in 0..passes {
@@ -124,7 +136,7 @@ fn radix_scatter(
     // 4096 u64 keys, 2048 u32 warp slots, two 256-u32 prefix arrays, 8 warp totals,
     // and one ticket. Every read follows initialization and a warp/block barrier.
     let (sorted_keys, warp_slots, tile_starts, global_starts, warp_totals, tile_index) = unsafe {
-        let shared = device::shared::<43048>();
+        let shared = device::shared::<SCATTER_SHARED>();
         (
             shared.cast::<u64>(),
             shared.add(32768).cast::<u32>(),
@@ -349,7 +361,7 @@ fn radix_scatter(
 /// keys and scratch must point to len distinct initialized host words, and workspace
 /// to 1 + ceil(len / 4096) * 256 words, all exclusively borrowed. Device 0 must exist.
 /// bits must be 32 or 64 and cover every key's significant bits; len is in 2..=2^30.
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rsb_offload_radix_sort(
     keys: *mut u64,
@@ -376,7 +388,7 @@ pub unsafe extern "C" fn rsb_offload_radix_sort(
     {
         let mut counts = DeviceBuffer::upload(&mut histogram);
         offload! { kernel = digit_counts, workgroup_dim = [blocks, 1, 1],
-        thread_dim = [BLOCK, 1, 1], device = 0,
+        thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(COUNTS_SHARED), device = 0,
         args = (input.pointer(), len as u32, passes, counts.kernel_argument::<2048>()), }
         counts.download();
     }
@@ -421,7 +433,7 @@ pub unsafe extern "C" fn rsb_offload_radix_sort(
             (output.pointer(), input.pointer())
         };
         offload! { kernel = radix_scatter, workgroup_dim = [blocks, 1, 1],
-        thread_dim = [BLOCK, 1, 1], device = 0,
+        thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(SCATTER_SHARED), device = 0,
         args = (from, len as u32, pass as u32 * 8, bases.pointer(),
             pass as u32 * 256, status.pointer(), to), }
         in_original = !in_original;
