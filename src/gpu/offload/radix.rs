@@ -11,6 +11,7 @@ use super::key::Key;
 use super::ranges;
 #[cfg(target_os = "linux")]
 use super::resident::DeviceBuffer;
+use core::mem::size_of;
 #[cfg(target_os = "linux")]
 use core::offload::offload;
 use core::offload::offload_kernel;
@@ -25,7 +26,12 @@ const TILE: u32 = 4096;
 // Shared-memory bytes per kernel. NVIDIA declares them statically in PTX; AMD
 // allocates them at launch (`dyn_cache`), so the host passes these sizes there.
 const COUNTS_SHARED: usize = 8192;
-const SCATTER_SHARED: usize = 43048;
+/// `radix_scatter`'s shared bytes: a tile of keys, then 10,280 bytes of counters (2048
+/// warp slots, two 256-entry prefix arrays, 8 warp totals, a ticket, all u32). Sizing the
+/// key area by key width lets 32-bit sorts fit three blocks per SM instead of two.
+const fn scatter_shared(key_bytes: usize) -> usize {
+    TILE as usize * key_bytes + 10_280
+}
 #[cfg(target_os = "linux")]
 const fn launch_shared(bytes: usize) -> u32 {
     if cfg!(rsb_offload_amdgpu) {
@@ -64,27 +70,19 @@ pub(super) fn digit_counts<K: Key>(keys: *mut K, len: u32, passes: u32, counts: 
     }
     // SAFETY: every thread reaches the barrier before any histogram updates.
     unsafe { sync_block() };
-    let lane_below = (1_u32 << (tid % 32)).wrapping_sub(1);
     for round in 0..16 {
         let index = block * TILE + round * BLOCK + tid;
-        let valid = index < len;
-        // SAFETY: keys is resident for len initialized elements, and index is checked.
-        let key = if valid {
-            unsafe { *keys.add(index as usize) }
-        } else {
-            K::ZERO
-        };
-        for pass in 0..passes {
-            let digit = if valid { key.digit(pass * 8) } else { RADIX };
-            // SAFETY: all lanes, including invalid tail lanes, execute every match.
-            let peers = unsafe { device::match_any(digit) };
-            if valid && peers & lane_below == 0 {
-                // SAFETY: counters are initialized and shared. One leader adds the
-                // entire peer group, avoiding 32 contending updates for a constant byte.
+        if index < len {
+            // SAFETY: keys is resident for len initialized elements, and index is checked.
+            let key = unsafe { *keys.add(index as usize) };
+            for pass in 0..passes {
+                // SAFETY: counters are initialized and shared. Plain block-scope atomics,
+                // as in CUDA-Oxide: warp-aggregating with match_any first made this kernel
+                // compute-bound (Nsight Compute: 92% SM, 10% memory throughput).
                 unsafe {
                     device::add_shared(
-                        shared.add((pass * RADIX + digit) as usize),
-                        peers.count_ones(),
+                        shared.add((pass * RADIX + key.digit(pass * 8)) as usize),
+                        1,
                     );
                 }
             }
@@ -132,17 +130,23 @@ pub(super) fn radix_scatter<K: Key>(
     keys_out: *mut K,
 ) {
     // SAFETY: the block-shared allocation is aligned and contains these disjoint arrays:
-    // 4096 keys (room for u64), 2048 u32 warp slots, two 256-u32 prefix arrays, 8 warp totals,
-    // and one ticket. Every read follows initialization and a warp/block barrier.
+    // 4096 keys, 2048 u32 warp slots, two 256-u32 prefix arrays, 8 warp totals, and one
+    // ticket. Every read follows initialization and a warp/block barrier. The size test
+    // is a compile-time constant, so each key width declares only its own storage.
     let (sorted_keys, warp_slots, tile_starts, global_starts, warp_totals, tile_index) = unsafe {
-        let shared = device::shared::<SCATTER_SHARED>();
+        let shared = if size_of::<K>() == 4 {
+            device::shared::<{ scatter_shared(4) }>()
+        } else {
+            device::shared::<{ scatter_shared(8) }>()
+        };
+        let counters = TILE as usize * size_of::<K>();
         (
             shared.cast::<K>(),
-            shared.add(32768).cast::<u32>(),
-            shared.add(40960).cast::<u32>(),
-            shared.add(41984).cast::<u32>(),
-            shared.add(43008).cast::<u32>(),
-            shared.add(43040).cast::<u32>(),
+            shared.add(counters).cast::<u32>(),
+            shared.add(counters + 8192).cast::<u32>(),
+            shared.add(counters + 9216).cast::<u32>(),
+            shared.add(counters + 10_240).cast::<u32>(),
+            shared.add(counters + 10_272).cast::<u32>(),
         )
     };
 
@@ -430,7 +434,7 @@ fn sort_on_device<'a, K: Key>(
             (output.pointer(), input.pointer())
         };
         offload! { kernel = radix_scatter::<K>, workgroup_dim = [blocks, 1, 1],
-        thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(SCATTER_SHARED), device = 0,
+        thread_dim = [BLOCK, 1, 1], dyn_cache = launch_shared(scatter_shared(size_of::<K>())), device = 0,
         args = (from, len as u32, pass as u32 * 8, bases.pointer(),
             pass as u32 * 256, status.pointer(), to), }
         in_original = !in_original;
