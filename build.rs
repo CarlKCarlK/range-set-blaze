@@ -12,6 +12,12 @@ const OFFLOAD_SOURCES: [&str; 5] = [
     "ptx.rs",
 ];
 
+struct DeviceTarget {
+    triple: &'static str,
+    extension: &'static str,
+    configuration: &'static str,
+}
+
 fn main() {
     if let Ok(features) = env::var("BUILDFEATURES") {
         for feature in features.split(',') {
@@ -35,6 +41,7 @@ fn run(command: &mut Command) {
 }
 
 fn build_offload() {
+    println!("cargo:rustc-check-cfg=cfg(rsb_offload_amdgpu)");
     // Documentation builds expose the API without compiling or linking native kernels.
     println!("cargo:rerun-if-env-changed=DOCS_RS");
     if env::var_os("DOCS_RS").is_some() {
@@ -52,12 +59,10 @@ fn build_offload() {
     );
     println!("cargo:rerun-if-env-changed=RANGE_SET_BLAZE_OFFLOAD_ARCH");
     let architecture = env::var("RANGE_SET_BLAZE_OFFLOAD_ARCH").unwrap_or_else(|_| "sm_86".into());
-    assert!(
-        architecture.starts_with("sm_")
-            && architecture.len() > 3
-            && architecture[3..].chars().all(|c| c.is_ascii_digit()),
-        "RANGE_SET_BLAZE_OFFLOAD_ARCH must be an NVIDIA architecture such as sm_86"
-    );
+    let target = offload_target(&architecture);
+    if target.triple == "amdgcn-amd-amdhsa" {
+        println!("cargo:rustc-cfg=rsb_offload_amdgpu");
+    }
     let output = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo must set OUT_DIR"));
     let rustc = env::var_os("RUSTC").expect("Cargo must set RUSTC");
     let sysroot = Command::new(&rustc)
@@ -94,6 +99,7 @@ fn build_offload() {
         "-Cpanic=abort",
         "-O",
         "-Zunstable-options",
+        target.configuration,
     ];
     run(Command::new(&rustc)
         .args(common)
@@ -103,6 +109,48 @@ fn build_offload() {
         .arg("-o")
         .arg(output.join("metadata.a")));
 
+    let device = compile_device(&output, &manifest, &architecture, &target);
+    run(Command::new(&rustc)
+        .args(common)
+        .args(["--crate-type=staticlib", "-Clto=fat", "-Cembed-bitcode=yes"])
+        .arg(format!("-Zoffload=Host={}", device.display()))
+        .arg(&source)
+        .arg("-o")
+        .arg(output.join("librsb_offload_native.a")));
+    link_offload(&output, &runtime);
+}
+
+fn offload_target(architecture: &str) -> DeviceTarget {
+    if architecture.starts_with("sm_")
+        && architecture.len() > 3
+        && architecture[3..].chars().all(|c| c.is_ascii_digit())
+    {
+        DeviceTarget {
+            triple: "nvptx64-nvidia-cuda",
+            extension: "ptx",
+            configuration: "--cfg=rsb_offload_nvidia",
+        }
+    } else {
+        assert!(
+            architecture.starts_with("gfx")
+                && architecture.len() > 3
+                && architecture[3..].chars().all(|c| c.is_ascii_hexdigit()),
+            "RANGE_SET_BLAZE_OFFLOAD_ARCH must name an NVIDIA (sm_86) or AMD (gfx1151) architecture"
+        );
+        DeviceTarget {
+            triple: "amdgcn-amd-amdhsa",
+            extension: "elf",
+            configuration: "--cfg=rsb_offload_amdgpu",
+        }
+    }
+}
+
+fn compile_device(
+    output: &Path,
+    manifest: &Path,
+    architecture: &str,
+    target: &DeviceTarget,
+) -> PathBuf {
     // Rebuild core with the GPU's target CPU too: mixing a prebuilt core with a different
     // target CPU is rejected by rustc's ABI checks. Use an isolated Cargo project/target
     // directory so the nested build never waits on the outer Cargo target-directory lock.
@@ -114,7 +162,7 @@ fn build_offload() {
             "--release",
             "--lib",
             "--target",
-            "nvptx64-nvidia-cuda",
+            target.triple,
             "-Zbuild-std=core",
             "--manifest-path",
         ])
@@ -126,19 +174,14 @@ fn build_offload() {
         .env(
             "RUSTFLAGS",
             format!(
-                "-Ctarget-cpu={architecture} -Cpanic=abort -Zunstable-options -Zoffload=Device={}",
-                manifest.display()
+                "-Ctarget-cpu={architecture} -Cpanic=abort -Zunstable-options {} -Zoffload=Device={}",
+                target.configuration, manifest.display()
             ),
         ));
-    let device = device_target.join("nvptx64-nvidia-cuda/release/rsb_offload_native.ptx");
-    run(Command::new(&rustc)
-        .args(common)
-        .args(["--crate-type=staticlib", "-Clto=fat", "-Cembed-bitcode=yes"])
-        .arg(format!("-Zoffload=Host={}", device.display()))
-        .arg(&source)
-        .arg("-o")
-        .arg(output.join("librsb_offload_native.a")));
-    link_offload(&output, &runtime);
+    device_target.join(format!(
+        "{}/release/rsb_offload_native.{}",
+        target.triple, target.extension
+    ))
 }
 
 fn link_offload(output: &Path, runtime: &Path) {

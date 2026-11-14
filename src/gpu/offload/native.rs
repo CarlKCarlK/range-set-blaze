@@ -1,37 +1,39 @@
-//! Compiled independently for the host and NVIDIA GPU by `build.rs`.
+//! Compiled independently for the host and selected GPU target by `build.rs`.
 //! This file intentionally depends only on `core`, so the GPU never builds wgpu or Rayon.
 
 #![no_std]
 #![feature(gpu_offload)]
 #![cfg_attr(target_arch = "nvptx64", feature(stdarch_nvptx, abi_gpu_kernel))]
+#![cfg_attr(target_arch = "amdgpu", feature(stdarch_amdgpu, abi_gpu_kernel))]
 #![cfg_attr(target_arch = "nvptx64", feature(asm_experimental_arch))]
 
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 use core::offload::offload;
 use core::offload::offload_kernel;
 use core::panic::PanicInfo;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use core::ptr::swap;
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 use core::slice::from_raw_parts_mut;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 use device::{block_dim_x, block_idx_x, sync_block, thread_idx_x};
 
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 mod resident;
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 use resident::DeviceBuffer;
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 mod device;
 #[cfg(target_arch = "nvptx64")]
 mod ptx;
+#[cfg(not(rsb_offload_amdgpu))]
 mod radix;
 
 const BLOCK_SIZE: u32 = 256;
 
 #[panic_handler]
 fn panic(_: &PanicInfo<'_>) -> ! {
-    #[cfg(not(target_arch = "nvptx64"))]
+    #[cfg(target_os = "linux")]
     {
         unsafe extern "C" {
             fn abort() -> !;
@@ -39,7 +41,7 @@ fn panic(_: &PanicInfo<'_>) -> ! {
         // SAFETY: abort has no preconditions and prevents unwinding across the C interface.
         unsafe { abort() }
     }
-    #[cfg(target_arch = "nvptx64")]
+    #[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
     loop {}
 }
 
@@ -88,16 +90,23 @@ fn finish_blocks<const N: usize>(keys: *mut [u64; N], width: usize) {
     }
 }
 
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 fn thread_index() -> usize {
     // SAFETY: these intrinsics only read this GPU thread's launch coordinates.
-    unsafe { (thread_idx_x() + block_idx_x() * block_dim_x()) as usize }
+    #[cfg(target_arch = "nvptx64")]
+    unsafe {
+        (thread_idx_x() + block_idx_x() * block_dim_x()) as usize
+    }
+    #[cfg(target_arch = "amdgpu")]
+    {
+        (thread_idx_x() + block_idx_x() * block_dim_x()) as usize
+    }
 }
 
 /// # Safety
 /// `keys` points to the mapped, initialized N-element allocation. Threads must handle
 /// exactly one pass over disjoint XOR pairs, with synchronization between passes.
-#[cfg(target_arch = "nvptx64")]
+#[cfg(any(target_arch = "nvptx64", target_arch = "amdgpu"))]
 unsafe fn compare_pair<const N: usize>(
     keys: *mut [u64; N],
     index: usize,
@@ -121,12 +130,12 @@ unsafe fn compare_pair<const N: usize>(
     }
 }
 
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 unsafe extern "C" {
     fn omp_get_num_devices() -> i32;
 }
 
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 #[unsafe(no_mangle)]
 pub extern "C" fn rsb_offload_devices() -> i32 {
     // SAFETY: OpenMP's runtime query takes no arguments and initializes its plugins.
@@ -136,7 +145,7 @@ pub extern "C" fn rsb_offload_devices() -> i32 {
 /// # Safety
 /// `keys` must be exclusively owned, initialized, and valid for `len` elements, where
 /// `len` is a power of two in 2..=2^30. An offload GPU must be available.
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rsb_offload_sort(keys: *mut u64, len: usize) {
     // SAFETY: the caller guarantees initialized, exclusively owned storage for len keys.
@@ -160,7 +169,7 @@ pub unsafe extern "C" fn rsb_offload_sort(keys: *mut u64, len: usize) {
     resident.download();
 }
 
-#[cfg(not(target_arch = "nvptx64"))]
+#[cfg(target_os = "linux")]
 fn launch<const N: usize>(keys: *mut [u64; N]) {
     let groups = (N as u32).div_ceil(BLOCK_SIZE);
     offload! {
