@@ -11,11 +11,12 @@ CPU/SIMD measurements, Windows/WSL wgpu measurements, and an AMD offload probe.
 Read [the experiment procedure](AMD_NVIDIA_PORTABILITY_SPEC.md) and root
 `AGENTS.md` before starting.
 
-The desktop's new offload and resource-cache changes were still uncommitted
-when this sister branch was created. This branch does not yet contain them.
-Before a matched comparison or an AMD offload port, ask the desktop session for
-the published implementation commit and merge that commit into this branch.
-Do not claim the initial branch already contains the new offload backend.
+The desktop implementation commit
+`aa4c21a76d1263d3d31008b8109b73bcf4b7c211` has now been merged into this
+branch. It includes the offload radix backend and shared wgpu resource cache.
+Matched measurements below must identify their exact merged source revision.
+The offload backend still targets NVIDIA; AMD offload requires a separate probe
+and port.
 
 Use the draft portability PR's conversation for durable coordination. Each
 session posts the machine and source commit, work claimed, exact commands,
@@ -26,7 +27,8 @@ the other session's branch or merge either PR automatically.
 
 PR comments do not wake an idle local Codex session. A human must prompt the
 other session to check the PR unless a separate watcher has been configured.
-No watcher or autonomous laptop session has been started by this setup.
+An AMD agent now operates this worktree over SSH from the desktop session.
+No independent laptop Codex process or PR watcher has been configured.
 
 Start on the laptop by recording Windows/WSL versions, driver, adapter,
 toolchains, and existing GPU configuration. Preserve the existing Dozen setup;
@@ -40,7 +42,7 @@ Suggested initial instruction for the laptop session:
 > specs/AMD_NVIDIA_PORTABILITY_SPEC.md on branch amd-gpu-portability. Read the
 > portability draft PR conversation, post an AMD-session check-in, and begin
 > environment inspection and correctness checks. Coordinate shared changes
-> through that PR. Run native Windows commands from WSL2. Check with the
-> desktop session for its published implementation commit before benchmarking
-> the new cached wgpu path or attempting to port the offload backend. Record
+> through that PR. Run native Windows commands from WSL2. Confirm the
+> current implementation commit with the desktop session before comparing new
+> results or attempting to port the offload backend. Record
 > each machine's own CPU baseline; never label software rendering as GPU work.

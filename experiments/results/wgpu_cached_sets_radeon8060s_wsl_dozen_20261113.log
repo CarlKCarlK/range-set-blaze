@@ -1,0 +1,20 @@
+Date: 2026-11-13 America/Los_Angeles
+Machine: HP ZBook Ultra G1a14; Ryzen AI Max+ PRO 395, 16 cores/32 threads; Radeon 8060S; 128 GB unified LPDDR5X
+Source: 8cb9dd213771e3f81bea776fbe592faf417b66bf, including desktop aa4c21a76d1263d3d31008b8109b73bcf4b7c211; handoff-document-only edit present
+OS: Ubuntu 24.04.3 WSL2; kernel 6.6.87.2-microsoft-standard-WSL2
+Windows: Windows11 Pro build26200; Radeon driver32.0.22050.4002; HP Optimized power plan; AC online at readiness check
+Build: cargo +1.99.1 build --release --locked --features shuffled_slices --bin gpu_ingest
+Run: target/release/gpu_ingest --cpu 16 --cpu 32 --type u32 1000000
+Environment: VK_DRIVER_FILES=/home/carlk/.local/opt/mesa-dzn-25.2.8/share/vulkan/icd.d/dzn_icd.x86_64.json
+Environment: LD_LIBRARY_PATH=/home/carlk/.local/opt/mesa-dzn-25.2.8/lib/x86_64-linux-gnu:/usr/lib/wsl/lib
+Environment: MESA_D3D12_DEFAULT_ADAPTER_NAME=AMD, WGPU_BACKEND=vulkan, WGPU_ALLOW_UNDERLYING_NONCOMPLIANT_ADAPTER=1
+Implementation: cached 32-bit wgpu sorter/compactor; portable release build; no target-cpu=native
+Method: end-to-end construction; >=1 second warmup, median of five samples; correctness assertions; CPU/GPU measurements sequential
+Correctness: broad GPU suite interrupted during map randomization to prioritize requested set benchmark; no complete-suite pass claimed
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+WARNING: dzn is not a conformant Vulkan implementation, testing use only.
+Dropped Escape call with ulEscapeCode : 0x03007703
+adapter="Microsoft Direct3D12 (AMD Radeon(TM) 8060S Graphics)" backend=Vulkan device_type=IntegratedGpu
+available threads=32
+WARNING: dzn is not a conformant Vulkan implementation, testing use only.
+Dropped Escape call with ulEscapeCode : 0x03007703
