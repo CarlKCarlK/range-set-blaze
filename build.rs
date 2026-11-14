@@ -156,7 +156,20 @@ fn compile_device(
     // directory so the nested build never waits on the outer Cargo target-directory lock.
     fs::write(output.join("Cargo.toml"), "[package]\nname = \"rsb-offload-native\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[workspace]\n[lib]\npath = \"native.rs\"\ncrate-type = [\"cdylib\"]\n").expect("could not write GPU build manifest");
     let device_target = output.join("device-target");
-    run(Command::new(env::var_os("CARGO").expect("Cargo must set CARGO"))
+    let mut cargo = Command::new(env::var_os("CARGO").expect("Cargo must set CARGO"));
+    // Cargo gives this build script the host's `CARGO_CFG_*` and `CARGO_FEATURE_*`
+    // variables, and the nested Cargo does not clear ones its own target lacks. Leaked
+    // host cfgs mislead `compiler_builtins`: x86_64's `CARGO_CFG_TARGET_HAS_RELIABLE_F128`
+    // enables f128 routines that LLVM cannot lower for amdgcn.
+    for (key, _) in env::vars_os() {
+        if key
+            .to_str()
+            .is_some_and(|key| key.starts_with("CARGO_CFG_") || key.starts_with("CARGO_FEATURE_"))
+        {
+            cargo.env_remove(key);
+        }
+    }
+    run(cargo
         .args([
             "build",
             "--release",
