@@ -4,6 +4,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+const OFFLOAD_SOURCES: [&str; 5] = [
+    "native.rs",
+    "resident.rs",
+    "radix.rs",
+    "device.rs",
+    "ptx.rs",
+];
+
 fn main() {
     if let Ok(features) = env::var("BUILDFEATURES") {
         for feature in features.split(',') {
@@ -74,7 +82,7 @@ fn build_offload() {
         "missing nightly offload component; run rustup component add offload llvm-tools llvm-bitcode-linker rust-src"
     );
     let source = output.join("native.rs");
-    for name in ["native.rs", "resident.rs", "radix.rs", "ptx.rs"] {
+    for name in OFFLOAD_SOURCES {
         println!("cargo:rerun-if-changed=src/gpu/offload/{name}");
         fs::copy(format!("src/gpu/offload/{name}"), output.join(name))
             .expect("could not copy offload source");

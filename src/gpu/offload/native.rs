@@ -6,8 +6,6 @@
 #![cfg_attr(target_arch = "nvptx64", feature(stdarch_nvptx, abi_gpu_kernel))]
 #![cfg_attr(target_arch = "nvptx64", feature(asm_experimental_arch))]
 
-#[cfg(target_arch = "nvptx64")]
-use core::arch::nvptx::{_block_dim_x, _block_idx_x, _syncthreads, _thread_idx_x};
 #[cfg(not(target_arch = "nvptx64"))]
 use core::offload::offload;
 use core::offload::offload_kernel;
@@ -16,11 +14,15 @@ use core::panic::PanicInfo;
 use core::ptr::swap;
 #[cfg(not(target_arch = "nvptx64"))]
 use core::slice::from_raw_parts_mut;
+#[cfg(target_arch = "nvptx64")]
+use device::{block_dim_x, block_idx_x, sync_block, thread_idx_x};
 
 #[cfg(not(target_arch = "nvptx64"))]
 mod resident;
 #[cfg(not(target_arch = "nvptx64"))]
 use resident::DeviceBuffer;
+#[cfg(target_arch = "nvptx64")]
+mod device;
 #[cfg(target_arch = "nvptx64")]
 mod ptx;
 mod radix;
@@ -62,7 +64,7 @@ fn sort_blocks<const N: usize>(keys: *mut [u64; N]) {
             // in this block. Every thread reaches the barrier before the next pass.
             unsafe {
                 compare_pair(keys, index, stride, width);
-                _syncthreads();
+                sync_block();
             }
             stride /= 2;
         }
@@ -80,7 +82,7 @@ fn finish_blocks<const N: usize>(keys: *mut [u64; N], width: usize) {
         // participate, and each barrier makes the previous pass's writes visible.
         unsafe {
             compare_pair(keys, index, stride, width);
-            _syncthreads();
+            sync_block();
         }
         stride /= 2;
     }
@@ -89,7 +91,7 @@ fn finish_blocks<const N: usize>(keys: *mut [u64; N], width: usize) {
 #[cfg(target_arch = "nvptx64")]
 fn thread_index() -> usize {
     // SAFETY: these intrinsics only read this GPU thread's launch coordinates.
-    unsafe { (_thread_idx_x() + _block_idx_x() * _block_dim_x()) as usize }
+    unsafe { (thread_idx_x() + block_idx_x() * block_dim_x()) as usize }
 }
 
 /// # Safety

@@ -1,0 +1,11 @@
+Date: 2026-11-13 (America/Los_Angeles)
+Source: aa4c21a76d1263d3d31008b8109b73bcf4b7c211; no library changes during this run
+Hardware: Ryzen 9 7950X (16 cores / 32 threads), RTX 3060
+Method: end-to-end set construction, >=1 second warmup, median of five samples; correctness compared with CPU
+Environment: Ubuntu WSL2; real NVIDIA offload GPU, software wgpu excluded
+Rust: nightly-2026-11-12; --release --locked --features offload_nightly_experimental
+Run: RANGE_SET_BLAZE_REQUIRE_OFFLOAD_GPU=1 target/release/gpu_ingest --cpu 16 --cpu 32 --type u32 1000000
+Offload: automatic sort selection; no LIBOMPTARGET_MEMORY_MANAGER_THRESHOLD override
+
+adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32

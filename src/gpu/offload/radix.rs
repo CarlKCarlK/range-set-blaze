@@ -3,11 +3,11 @@
 //! pointer-argument mapping only needs to look up their already-associated base addresses.
 
 #[cfg(target_arch = "nvptx64")]
-use super::ptx;
+use super::device;
+#[cfg(target_arch = "nvptx64")]
+use super::device::{block_idx_x, sync_block, thread_idx_x};
 #[cfg(not(target_arch = "nvptx64"))]
 use super::resident::DeviceBuffer;
-#[cfg(target_arch = "nvptx64")]
-use core::arch::nvptx::{_block_idx_x, _syncthreads, _thread_idx_x};
 #[cfg(not(target_arch = "nvptx64"))]
 use core::offload::offload;
 use core::offload::offload_kernel;
@@ -38,9 +38,9 @@ fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048])
     // SAFETY: the launch has 256 threads; shared storage has 2048 aligned u32 counters.
     let (tid, block, shared) = unsafe {
         (
-            _thread_idx_x(),
-            _block_idx_x(),
-            ptx::shared::<8192>().cast::<u32>(),
+            thread_idx_x(),
+            block_idx_x(),
+            device::shared::<8192>().cast::<u32>(),
         )
     };
     for pass in 0..passes {
@@ -48,7 +48,7 @@ fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048])
         unsafe { *shared.add((pass * RADIX + tid) as usize) = 0 };
     }
     // SAFETY: every thread reaches the barrier before any histogram updates.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
     let lane_below = (1_u32 << (tid % 32)).wrapping_sub(1);
     for round in 0..16 {
         let index = block * TILE + round * BLOCK + tid;
@@ -66,12 +66,12 @@ fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048])
                 RADIX
             };
             // SAFETY: all lanes, including invalid tail lanes, execute every match.
-            let peers = unsafe { ptx::match_any(digit) };
+            let peers = unsafe { device::match_any(digit) };
             if valid && peers & lane_below == 0 {
                 // SAFETY: counters are initialized and shared. One leader adds the
                 // entire peer group, avoiding 32 contending updates for a constant byte.
                 unsafe {
-                    ptx::add_shared(
+                    device::add_shared(
                         shared.add((pass * RADIX + digit) as usize),
                         peers.count_ones(),
                     );
@@ -80,7 +80,7 @@ fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048])
         }
     }
     // SAFETY: every thread reaches this barrier before reading the completed histogram.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
     for pass in 0..passes {
         let slot = (pass * RADIX + tid) as usize;
         // SAFETY: the block barrier completed every shared counter update.
@@ -100,7 +100,7 @@ fn digit_counts(keys: *mut u64, len: u32, passes: u32, counts: *mut [u64; 2048])
 #[offload_kernel]
 fn clear_workspace(workspace: *mut u64, len: u32) {
     // SAFETY: these intrinsics only read this thread's launch coordinates.
-    let index = unsafe { _block_idx_x() * BLOCK + _thread_idx_x() };
+    let index = unsafe { block_idx_x() * BLOCK + thread_idx_x() };
     if index < len {
         // SAFETY: each thread owns one distinct, in-bounds word of the resident workspace.
         unsafe { *workspace.add(index as usize) = 0 };
@@ -124,7 +124,7 @@ fn radix_scatter(
     // 4096 u64 keys, 2048 u32 warp slots, two 256-u32 prefix arrays, 8 warp totals,
     // and one ticket. Every read follows initialization and a warp/block barrier.
     let (sorted_keys, warp_slots, tile_starts, global_starts, warp_totals, tile_index) = unsafe {
-        let shared = ptx::shared::<43048>();
+        let shared = device::shared::<43048>();
         (
             shared.cast::<u64>(),
             shared.add(32768).cast::<u32>(),
@@ -137,7 +137,7 @@ fn radix_scatter(
 
     // Per warp and digit: first a count, then that warp's next slot in the tile.
     // SAFETY: this launch has exactly 256 threads; this reads the local thread index.
-    let tid = unsafe { _thread_idx_x() };
+    let tid = unsafe { thread_idx_x() };
     if tid == 0 {
         // SAFETY: reset initialized the ticket. A single leader claims this block's
         // unique tile and initializes its shared slot before the block barrier.
@@ -146,7 +146,7 @@ fn radix_scatter(
         }
     }
     // SAFETY: all 256 threads reach this block barrier before the next phase.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
     // SAFETY: the preceding block barrier published the leader's initialized ticket.
     let tile = unsafe { *tile_index.add(0) };
     let lane = tid % 32;
@@ -163,7 +163,7 @@ fn radix_scatter(
         w += 1;
     }
     // SAFETY: all 256 threads reach this block barrier before the next phase.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
 
     // A: count each warp's digits.
     let mut round = 0;
@@ -178,7 +178,7 @@ fn radix_scatter(
             RADIX
         };
         // SAFETY: all 32 lanes execute this operation, including invalid tail lanes.
-        let peers = unsafe { ptx::match_any(digit) };
+        let peers = unsafe { device::match_any(digit) };
         if valid && (peers & lane_below) == 0 {
             // SAFETY: only the first peer updates this warp/digit slot this round.
             unsafe {
@@ -186,11 +186,11 @@ fn radix_scatter(
             }
         }
         // SAFETY: all warp lanes participate, ordering shared-slot reads and updates.
-        unsafe { ptx::sync_warp() };
+        unsafe { device::sync_warp() };
         round += 1;
     }
     // SAFETY: all 256 threads reach this block barrier before the next phase.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
 
     // B: thread `tid` owns digit `tid`. Prefix its counts across warps, then scan the tile's
     // digit totals across the block.
@@ -211,7 +211,7 @@ fn radix_scatter(
     let mut delta = 1;
     while delta < 32 {
         // SAFETY: all warp lanes participate with the same delta in 1..32.
-        let up = unsafe { ptx::shuffle_up(inclusive, delta) };
+        let up = unsafe { device::shuffle_up(inclusive, delta) };
         if lane >= delta {
             inclusive += up;
         }
@@ -255,7 +255,7 @@ fn radix_scatter(
             *digit_bases.add((bases_offset + tid) as usize) as u32 + prefix;
     }
     // SAFETY: all 256 threads reach this block barrier before the next phase.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
     let mut tile_start = inclusive - total;
     w = 0;
     while w < warp_index {
@@ -276,7 +276,7 @@ fn radix_scatter(
         w += 1;
     }
     // SAFETY: all 256 threads reach this block barrier before the next phase.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
 
     // C: rank again and place each item in shared memory, in digit order.
     round = 0;
@@ -295,7 +295,7 @@ fn radix_scatter(
             RADIX
         };
         // SAFETY: all 32 lanes execute this operation, including invalid tail lanes.
-        let peers = unsafe { ptx::match_any(digit) };
+        let peers = unsafe { device::match_any(digit) };
         let rank = (peers & lane_below).count_ones();
         let slot = (warp_index * RADIX + digit) as usize;
         let first = if valid {
@@ -306,7 +306,7 @@ fn radix_scatter(
             0
         };
         // SAFETY: all warp lanes participate, ordering shared-slot reads and updates.
-        unsafe { ptx::sync_warp() };
+        unsafe { device::sync_warp() };
         if valid {
             let place = (first + rank) as usize;
             // SAFETY: stable ranks assign every valid input one distinct tile slot.
@@ -319,11 +319,11 @@ fn radix_scatter(
             }
         }
         // SAFETY: all warp lanes participate, ordering shared-slot reads and updates.
-        unsafe { ptx::sync_warp() };
+        unsafe { device::sync_warp() };
         round += 1;
     }
     // SAFETY: all 256 threads reach this block barrier before the next phase.
-    unsafe { _syncthreads() };
+    unsafe { sync_block() };
 
     // D: copy out in digit order. Item `place` of digit `d` goes `place - *tile_starts.add(d)`
     // past this tile's global start for `d`.

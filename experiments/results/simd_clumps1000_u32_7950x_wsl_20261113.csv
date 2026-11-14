@@ -1,0 +1,8 @@
+series,estimate,time_us,confidence_95_lower_us,confidence_95_upper_us
+from_iter,slope,853.624563,845.593029,859.613559
+from_slice (auto_ avx512),slope,94.751181,94.528000,94.957204
+from_slice@avx2,slope,91.959964,90.978853,92.978302
+from_slice@avx512,slope,95.739918,95.032319,96.686894
+from_slice@fallback,slope,179.533789,178.358017,181.093769
+from_slice@sse2,slope,111.483746,108.661057,116.919655
+from_slice@sse4.2,slope,110.096111,106.783380,113.961042
