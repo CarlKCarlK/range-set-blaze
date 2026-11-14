@@ -2,8 +2,9 @@
 //!
 //! Usage:
 //! `cargo run --release --features shuffled_slices --bin gpu_ingest -- [--cpu N]... [--type T]... [SIZES...]`
-//! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column; the default is
-//! every available thread. `Engine::Cpu(1)` is always included. Each `--type T` (such as `u32`)
+//! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column and, at the end of
+//! the row, an `Engine::CpuRadix(N)` column; the default is every available thread.
+//! `Engine::Cpu(1)` and `Engine::CpuRadix(1)` are always included. Each `--type T` (such as `u32`)
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
 //! empty when there is no hardware GPU. With the `cuda` feature, a `cuda_ms` column times
 //! `Engine::Cuda`; with the `cutile` feature, a `cutile_ms` column times `Engine::CuTile`.
@@ -74,11 +75,13 @@ fn main() {
         thread_counts.push(available);
     }
     let mut cpu_columns = String::new();
+    let mut radix_columns = String::new();
     for count in &thread_counts {
         write!(cpu_columns, ",cpu_{count}_ms").expect("writing to a String can't fail");
+        write!(radix_columns, ",cpu_radix_{count}_ms").expect("writing to a String can't fail");
     }
     println!(
-        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms,cutile_ms,offload_ms"
+        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms,cutile_ms,offload_ms,cpu_radix_1_ms{radix_columns}"
     );
     for n in sizes {
         for workload in [Workload::Distinct, Workload::Duplicates] {
@@ -206,6 +209,12 @@ impl Run<'_> {
             let elapsed = milliseconds(shuffled(Engine::Cpu(count)));
             write!(cpu_many, ",{elapsed:.3}").expect("writing to a String can't fail");
         }
+        let radix_1 = shuffled(Engine::CpuRadix(NonZeroUsize::MIN));
+        let mut radix_many = String::new();
+        for &count in self.thread_counts {
+            let elapsed = milliseconds(shuffled(Engine::CpuRadix(count)));
+            write!(radix_many, ",{elapsed:.3}").expect("writing to a String can't fail");
+        }
         let gpu = self.has_gpu.then(|| shuffled(Engine::Wgpu));
         #[cfg(feature = "cuda")]
         let cuda = Some(shuffled(Engine::Cuda));
@@ -220,7 +229,7 @@ impl Run<'_> {
         #[cfg(not(feature = "offload_nightly_experimental"))]
         let offload: Option<Duration> = None;
         println!(
-            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{},{},{}",
+            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{},{},{},{:.3}{radix_many}",
             T::NAME,
             values.len(),
             distinct,
@@ -234,6 +243,7 @@ impl Run<'_> {
                 "{:.3}",
                 milliseconds(offload)
             )),
+            milliseconds(radix_1),
         );
     }
 

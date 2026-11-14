@@ -92,7 +92,7 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
         return RangeMapBlaze::from_slices(keys, values);
     }
     let threads = match engine {
-        Engine::Cpu(threads) => threads,
+        Engine::Cpu(threads) | Engine::CpuRadix(threads) => threads,
         Engine::Wgpu | Engine::WgpuOrCpu => all_threads(),
         #[cfg(feature = "cuda")]
         Engine::Cuda | Engine::CudaOrCpu => all_threads(),
@@ -106,7 +106,7 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
     let key_words = key_words(&pool, keys);
     let value_words = value_words(&pool, values);
     let found = match engine {
-        Engine::Cpu(_) => ranges_cpu(
+        Engine::Cpu(_) | Engine::CpuRadix(_) => ranges_cpu(
             &pool,
             keys,
             values,
@@ -1032,6 +1032,7 @@ mod tests {
         let mut engines = vec![
             Engine::Cpu(NonZeroUsize::MIN),
             Engine::Cpu(NonZeroUsize::new(3).expect("3 is nonzero")),
+            Engine::CpuRadix(NonZeroUsize::new(3).expect("3 is nonzero")),
             Engine::WgpuOrCpu,
         ];
         if gpu_capable && has_hardware_gpu() {

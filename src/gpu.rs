@@ -24,6 +24,7 @@ use crate::{CheckSortedDisjoint, NotNanF32, NotNanF64, RangeSetBlaze, TotalF32, 
 #[cfg(feature = "float_nightly_experimental")]
 use crate::{NotNanF16, NotNanF128, TotalF16, TotalF128};
 
+mod cpu_radix;
 #[cfg(feature = "cuda")]
 mod cuda;
 #[cfg(feature = "cutile")]
@@ -176,6 +177,10 @@ pub enum Engine {
     /// set, the sort is in place, and `Cpu(1)` is plain `sort_unstable` followed by
     /// [`RangeSetBlaze::from_slice`].
     Cpu(NonZeroUsize),
+    /// As [`Engine::Cpu`], but sets sort with a parallel radix sort on the keys' bits, the
+    /// same kind of sort the GPU engines use, so comparisons between them are like for like.
+    /// Types without a GPU key (such as `u128`) and maps sort as [`Engine::Cpu`] does.
+    CpuRadix(NonZeroUsize),
     /// Sort and find the ranges on the GPU with portable wgpu compute shaders (Vulkan, Metal,
     /// DirectX 12), in one pass; only the ranges come back.
     ///
@@ -247,6 +252,13 @@ pub enum Engine {
 fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
     match engine {
         Engine::Cpu(threads) => from_slice_cpu(values, threads),
+        Engine::CpuRadix(threads) => {
+            if T::KEY_WORDS == 0 {
+                return from_slice_cpu(values, threads);
+            }
+            thread_pool(threads).install(|| cpu_radix::sort_by_key(values, T::encode));
+            RangeSetBlaze::from_slice(&*values)
+        }
         Engine::Wgpu => {
             assert!(
                 T::KEY_WORDS != 0,
@@ -1728,6 +1740,8 @@ mod tests {
         let mut engines = std::vec![
             Engine::Cpu(NonZeroUsize::MIN),
             Engine::Cpu(NonZeroUsize::new(3).expect("3 is nonzero")),
+            Engine::CpuRadix(NonZeroUsize::MIN),
+            Engine::CpuRadix(NonZeroUsize::new(3).expect("3 is nonzero")),
             Engine::WgpuOrCpu,
         ];
         if gpu_capable && has_hardware_gpu() {
