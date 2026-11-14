@@ -167,8 +167,8 @@ trait GpuElement: crate::Integer {
 /// How [`RangeSetBlaze::from_shuffled_slice`] and [`RangeMapBlaze::from_shuffled_slices`] do
 /// their work.
 ///
-/// A GPU engine named on its own ([`Engine::Wgpu`], [`Engine::Cuda`]) panics if it can't run;
-/// its `…OrCpu` form ([`Engine::WgpuOrCpu`], [`Engine::CudaOrCpu`]) uses [`Engine::Cpu`] with
+/// A GPU engine named on its own ([`Engine::Wgpu`], `Engine::Cuda`) panics if it can't run;
+/// its `…OrCpu` form ([`Engine::WgpuOrCpu`], `Engine::CudaOrCpu`) uses [`Engine::Cpu`] with
 /// every available thread instead.
 ///
 /// *Experimental; requires the `shuffled_slices` feature.*
@@ -230,11 +230,13 @@ pub enum Engine {
     /// for.
     #[cfg(feature = "cutile")]
     CuTile,
-    /// Sort encoded keys on an NVIDIA GPU with Rust's nightly `std::offload` machinery,
-    /// then assemble ranges on the CPU. Maps preserve last-input-value precedence.
+    /// Sort and find the ranges on an NVIDIA or AMD (RDNA) GPU with Rust's nightly
+    /// `std::offload` machinery; for sets, only the ranges come back. Maps sort on the GPU
+    /// and assemble their ranges on the CPU, preserving last-input-value precedence.
     ///
     /// Uses stable 8-bit radix sort above 1,024 keys and fused bitonic sort for smaller
-    /// inputs. Keys stay on the GPU during sorting; range assembly runs on the CPU.
+    /// inputs, with 32-bit keys when the element type fits. Select an AMD GPU at build time
+    /// with `RANGE_SET_BLAZE_OFFLOAD_ARCH` (for example `gfx1151`).
     ///
     /// *Requires `offload_nightly_experimental`, Linux, and the toolchain described in
     /// [the offload guide](https://github.com/CarlKCarlK/range-set-blaze/blob/gpu-on-simd/docs/offload.md).*
@@ -249,8 +251,8 @@ pub enum Engine {
     /// [`Engine::Cpu`] with every available thread. Runtime launch failures still fail.
     #[cfg(feature = "offload_nightly_experimental")]
     OffloadOrCpu,
-    /// On AMD GPUs, the same Rust radix-sort and range kernels as [`Engine::Offload`],
-    /// launched directly through AMD's HIP runtime: the AMD counterpart of [`Engine::Cuda`].
+    /// On AMD GPUs, the same Rust radix-sort and range kernels as `Engine::Offload`,
+    /// launched directly through AMD's HIP runtime: the AMD counterpart of `Engine::Cuda`.
     /// Only the ranges come back. Maps sort as [`Engine::Cpu`] does.
     ///
     /// *Requires `hip_nightly_experimental`, Linux, and AMD's HIP runtime.*

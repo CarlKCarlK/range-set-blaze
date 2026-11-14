@@ -1,0 +1,8 @@
+Benchmark date: 2026-11-14
+Source: d874b306 (gpu-on-simd)
+Workload: 100M u32, duplicates, shuffled; gpu_ingest --quick --cpu 16 (3 samples per run, median), each build run 3 times.
+Desktop WSL2 rows: first 3 from the offload build (cpu_16, offload_ms, cpu_radix_16), next 3 from cargo oxide --features cuda,cutile (cuda_ms, cutile_ms, cpu_16, cpu_radix_16).
+Desktop Windows rows: native Windows build (Rust 1.99.1, shuffled_slices) for wgpu (gpu_only_ms) with Windows CPU columns; 3 runs.
+Laptop WSL2 rows: first 3 from the HIP build (hip_ms), next 3 from the offload build (offload_ms, RANGE_SET_BLAZE_OFFLOAD_ARCH=gfx1151).
+Laptop Windows rows: native Windows wgpu (WGPU_BACKEND=vulkan); 3 runs.
+Scripts: C:\deldir\rsb-gpu-bench\table100m\
