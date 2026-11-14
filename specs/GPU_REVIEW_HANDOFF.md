@@ -44,9 +44,35 @@ source content was found among them.
 
 The laptop's committed history was imported into `review/amd-laptop-committed`.
 The local `review/amd-gpu-integration` branch merges it with `b97205e7` without
-conflicts and updates the historical AMD planning documents. Save the historical
-working-file copies in a named stash before advancing the laptop branch to this
-integration; do not pop that stash over the newer implementation.
+conflicts and updates the historical AMD planning documents. The laptop branch
+was fast-forwarded to `a2f0daa9` after its historical working-file copies were
+saved in stash `preserve-historical-gpu-copies-before-20261114-integration`.
+Its worktree is clean. Do not pop that stash over the newer implementation.
+
+## Validation
+
+On the Radeon 8060S laptop, both `gpu::hip::tests::gpu_ranges_match_host_ranges`
+and `gpu::offload::tests::gpu_ranges_match_host_ranges` passed on `a2f0daa9`
+(2 passed, 0 failed). They compare GPU results with host ranges across multiple
+sizes and key patterns. The command was:
+
+```sh
+cargo +nightly-2026-11-12 test --locked --features hip_nightly_experimental,offload_nightly_experimental --lib gpu_ranges_match_host_ranges -- --test-threads=1
+```
+
+The existing user-local ROCm runtime paths were used, with
+`HSA_ENABLE_DXG_DETECTION=1`, `RANGE_SET_BLAZE_OFFLOAD_ARCH=gfx1151`,
+`OMP_TARGET_OFFLOAD=MANDATORY`, `RANGE_SET_BLAZE_REQUIRE_OFFLOAD_GPU=1`, and
+`RANGE_SET_BLAZE_REQUIRE_HIP_GPU=1`. Build output is under
+`~/.cache/range-set-blaze-gpu-review` on the laptop.
+
+The desktop `just check-all` run on `b97205e7` encountered the previously
+recorded pinned-nightly/CUDA dependency failure: `cuda-host` calls
+`core::intrinsics::type_id`, unavailable in that nightly (`E0425`). This review
+does not change the affected library code, dependency revisions, or toolchains.
+The integration branch has identical Rust source, manifests, and lockfile to
+`b97205e7`; its additional changes are documentation. Relative file links and
+`git diff --check` passed on the integration branch.
 
 ## Remaining integration work
 
@@ -55,10 +81,10 @@ integration; do not pop that stash over the newer implementation.
    including CPU comparison/radix, wgpu, CUDA-Oxide, cuTile, offload, and HIP.
    Its present description still names the earlier in-place API and engines.
    Keep existing public-API changes visible to reviewers; this review adds none.
-2. Validate the resulting branch. Run `just check-all` before pushing; record the
-   exact merged commit and distinguish hardware checks from hosted CI. Confirm
-   GPU-required offload/HIP correctness on the laptop with its existing runtime
-   environment before claiming hardware coverage for that merged revision.
+2. Track hosted CI separately from the local gate limitation above. Full
+   offload/HIP suite coverage and a deliberate resolution of the pinned-nightly
+   CUDA dependency mismatch remain follow-up work; the two targeted hardware
+   checks do not establish that every hardware test passed.
 3. Prepare PR #39's description around the remaining branch delta, including the
    preserved historical laptop report and updated handoff documents. Its
    published delta previously consisted of two historical planning documents.
