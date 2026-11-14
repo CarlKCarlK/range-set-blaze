@@ -163,16 +163,16 @@ required-features = ["shuffled_slices"]
 
 [package.metadata.docs.rs]
 # Publish the optional APIs. Rustdoc's `doc_cfg` annotations identify the
-# feature required by each gated item. Not `all-features`: `cutile` needs a
-# CUDA toolkit at build time and `offload_nightly_experimental` needs a newer
-# nightly with the offload component, neither of which docs.rs provides.
+# feature required by each gated item. Not `all-features`: `cuda` and `cutile`
+# need a CUDA toolkit at build time (via cuda-bindings) and
+# `offload_nightly_experimental` needs a newer nightly with the offload
+# component, none of which docs.rs provides.
 features = [
     "std",
     "from_slice",
     "shuffled_slices",
     "float_nightly_experimental",
     "cursor_nightly_experimental",
-    "cuda",
 ]
 
 ###############################################################################
