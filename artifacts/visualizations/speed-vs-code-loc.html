@@ -1855,9 +1855,9 @@ html&gt;body{padding:0}&lt;/style&gt;
     &lt;h3&gt;Laptop · Ryzen AI Max+ PRO 395 + Radeon 8060S&lt;/h3&gt;
     &lt;svg class=&quot;speed-plot&quot; data-machine=&quot;laptop&quot; role=&quot;img&quot; aria-label=&quot;Laptop throughput versus repository code lines, with each engine labeled.&quot;&gt;&lt;/svg&gt;
   &lt;/section&gt;
-  &lt;div class=&quot;speed-legend&quot;&gt;&lt;span class=&quot;cpu&quot;&gt;●&lt;/span&gt; CPU &lt;span class=&quot;gpu&quot;&gt;▲&lt;/span&gt; GPU &lt;span class=&quot;cpu&quot;&gt;○&lt;/span&gt; † Older one-thread measurement; might be out of date&lt;/div&gt;
+  &lt;div class=&quot;speed-legend&quot;&gt;&lt;span class=&quot;cpu&quot;&gt;●&lt;/span&gt; CPU &lt;span class=&quot;gpu&quot;&gt;▲&lt;/span&gt; GPU &lt;span class=&quot;cpu&quot;&gt;○&lt;/span&gt; † Older one-thread measurement; might be out of date ‡ Earlier session&lt;/div&gt;
   &lt;div class=&quot;text-small&quot;&gt;Points: speed at the midpoint of the reported time range. Bars: observed range, not confidence intervals.&lt;/div&gt;
-  &lt;div class=&quot;text-small&quot;&gt;CubeCL runs the same Rust kernels on both GPUs (CUDA on the desktop, HIP on the laptop); its times come from a same-session rerun on November 15. CPU 16-thread points include parallel range finding and are single run medians.&lt;/div&gt;
+  &lt;div class=&quot;text-small&quot;&gt;Same-session rerun (November 15, 3 runs each): CubeCL, CUDA-Oxide, cuTile, HIP, and the 16-thread CPU engines, which now find ranges in parallel. ‡ Earlier session (November 14), not rerun. CubeCL runs the same Rust kernels on both GPUs (CUDA on the desktop, HIP on the laptop).&lt;/div&gt;
   &lt;div class=&quot;text-small&quot;&gt;wgpu ran on Windows; other engines ran under WSL2. LOC includes shared backend and build code. It excludes dependency implementations (notably std/Rayon and Lampshade), common dispatch/encoding, and the range-building core.&lt;/div&gt;
 &lt;/section&gt;
 &lt;style&gt;
@@ -1885,23 +1885,23 @@ html&gt;body{padding:0}&lt;/style&gt;
   const svgNamespace = &#x27;http://www.w3.org/2000/svg&#x27;;
   const datasets = {
     desktop: [
-      { name: &#x27;CUDA-Oxide&#x27;, loc: 1182, low: 130, high: 134, gpu: true },
+      { name: &#x27;CUDA-Oxide&#x27;, loc: 1182, low: 130, high: 133, gpu: true },
       { name: &#x27;CubeCL&#x27;, loc: 788, low: 138, high: 146, gpu: true },
-      { name: &#x27;Offload&#x27;, loc: 1717, low: 164, high: 168, gpu: true },
-      { name: &#x27;CPU radix · 16t&#x27;, loc: 306, low: 144, high: 144 },
-      { name: &#x27;cuTile&#x27;, loc: 850, low: 213, high: 225, gpu: true },
-      { name: &#x27;CPU sort · 16t&#x27;, loc: 154, low: 219, high: 219 },
-      { name: &#x27;wgpu · Windows&#x27;, loc: 891, low: 295, high: 392, gpu: true },
+      { name: &#x27;Offload ‡&#x27;, loc: 1717, low: 164, high: 168, gpu: true },
+      { name: &#x27;CPU radix · 16t&#x27;, loc: 306, low: 169, high: 182 },
+      { name: &#x27;cuTile&#x27;, loc: 850, low: 215, high: 224, gpu: true },
+      { name: &#x27;CPU sort · 16t&#x27;, loc: 154, low: 216, high: 251 },
+      { name: &#x27;wgpu · Windows ‡&#x27;, loc: 891, low: 295, high: 392, gpu: true },
       { name: &#x27;CPU radix · 1t †&#x27;, loc: 306, low: 673, high: 673, older: true },
       { name: &#x27;CPU sort · 1t †&#x27;, loc: 154, low: 1249, high: 1249, older: true }
     ],
     laptop: [
-      { name: &#x27;CPU radix · 16t&#x27;, loc: 306, low: 119, high: 119 },
-      { name: &#x27;HIP&#x27;, loc: 1550, low: 222, high: 238, gpu: true },
+      { name: &#x27;CPU radix · 16t&#x27;, loc: 306, low: 123, high: 133 },
+      { name: &#x27;HIP&#x27;, loc: 1550, low: 201, high: 212, gpu: true },
       { name: &#x27;CubeCL&#x27;, loc: 788, low: 222, high: 224, gpu: true },
-      { name: &#x27;CPU sort · 16t&#x27;, loc: 154, low: 263, high: 263 },
-      { name: &#x27;Offload&#x27;, loc: 1717, low: 273, high: 275, gpu: true },
-      { name: &#x27;wgpu · Windows&#x27;, loc: 891, low: 571, high: 602, gpu: true },
+      { name: &#x27;CPU sort · 16t&#x27;, loc: 154, low: 213, high: 221 },
+      { name: &#x27;Offload ‡&#x27;, loc: 1717, low: 273, high: 275, gpu: true },
+      { name: &#x27;wgpu · Windows ‡&#x27;, loc: 891, low: 571, high: 602, gpu: true },
       { name: &#x27;CPU radix · 1t †&#x27;, loc: 306, low: 643, high: 643, older: true },
       { name: &#x27;CPU sort · 1t †&#x27;, loc: 154, low: 1709, high: 1709, older: true }
     ]
