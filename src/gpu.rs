@@ -25,6 +25,8 @@ use crate::{CheckSortedDisjoint, NotNanF32, NotNanF64, RangeSetBlaze, TotalF32, 
 use crate::{NotNanF16, NotNanF128, TotalF16, TotalF128};
 
 mod cpu_radix;
+#[cfg(feature = "cubecl_experimental")]
+mod cubecl;
 #[cfg(feature = "cuda")]
 mod cuda;
 #[cfg(feature = "cutile")]
@@ -34,6 +36,7 @@ mod hip;
 mod map_ingest;
 #[cfg(feature = "offload_nightly_experimental")]
 mod offload;
+mod parallel_ranges;
 
 const WORKGROUP_SIZE: u32 = 256;
 const BOUNDARY_32_SHADER: &str = r"
@@ -162,6 +165,15 @@ trait GpuElement: crate::Integer {
 
     fn encode(self) -> u64;
     fn decode(key: u64) -> Self;
+
+    /// Builds the set from an already sorted slice, on up to `threads` threads.
+    ///
+    /// Types with the SIMD range finder override this (with `parallel_from_sorted_slice!`) to find
+    /// ranges in parallel; see `parallel_ranges.rs`. This default, for the rest, uses the
+    /// one-threaded [`RangeSetBlaze::from_slice`].
+    fn from_sorted_slice(sorted: &[Self], _threads: NonZeroUsize) -> RangeSetBlaze<Self> {
+        RangeSetBlaze::from_slice(sorted)
+    }
 }
 
 /// How [`RangeSetBlaze::from_shuffled_slice`] and [`RangeMapBlaze::from_shuffled_slices`] do
@@ -176,8 +188,10 @@ trait GpuElement: crate::Integer {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Engine {
     /// Sort on this many CPU threads (Rayon's `par_sort_unstable`), then find the ranges. For a
-    /// set, the sort is in place, and `Cpu(1)` is plain `sort_unstable` followed by
-    /// [`RangeSetBlaze::from_slice`].
+    /// set, the sort is in place, and the ranges are found with SIMD on the same threads: the
+    /// sorted slice is split into chunks (at least 2¹⁸ values each), each chunk's ranges are found
+    /// in parallel, and only ranges at the cuts between chunks are merged. `Cpu(1)` is plain
+    /// `sort_unstable` followed by the same SIMD range finder as [`RangeSetBlaze::from_slice`].
     Cpu(NonZeroUsize),
     /// As [`Engine::Cpu`], but sets sort with a parallel radix sort on the keys' bits, the
     /// same kind of sort the GPU engines use, so comparisons between them are like for like.
@@ -267,6 +281,22 @@ pub enum Engine {
     /// with every available thread.
     #[cfg(feature = "hip_nightly_experimental")]
     HipOrCpu,
+    /// One set of Rust kernels, compiled at run time by `CubeCL` for whichever GPU is present:
+    /// NVIDIA (CUDA) or AMD (HIP). It sorts the keys with a radix sort and finds the ranges on
+    /// the GPU; only the ranges come back. Maps sort as [`Engine::Cpu`] does.
+    ///
+    /// *Requires `cubecl_experimental`, Linux, and the CUDA driver or AMD's HIP runtime.*
+    ///
+    /// # Panics
+    ///
+    /// Panics when no CUDA or HIP GPU is available, for key types without a GPU
+    /// representation, or for more than `u32::MAX` values.
+    #[cfg(feature = "cubecl_experimental")]
+    CubeCl,
+    /// [`Engine::CubeCl`] when its types and device are available; otherwise [`Engine::Cpu`]
+    /// with every available thread.
+    #[cfg(feature = "cubecl_experimental")]
+    CubeClOrCpu,
 }
 
 fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
@@ -277,7 +307,7 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
                 return from_slice_cpu(values, threads);
             }
             thread_pool(threads).install(|| cpu_radix::sort_by_key(values, T::encode));
-            RangeSetBlaze::from_slice(&*values)
+            T::from_sorted_slice(values, threads)
         }
         Engine::Wgpu => {
             assert!(
@@ -366,6 +396,8 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
                 .map(|(start, end)| T::decode(start)..=T::decode(end));
             RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
         }
+        #[cfg(feature = "cubecl_experimental")]
+        Engine::CubeCl | Engine::CubeClOrCpu => from_slice_cubecl(values, engine),
     }
 }
 
@@ -397,6 +429,41 @@ fn from_slice_cutile<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
     } else {
         let keys = pool.install(|| values.par_iter().map(|&value| value.encode()).collect());
         cutile::ranges(keys, T::GAP).unwrap_or_else(|error| panic!("Engine::CuTile: {error}"))
+    };
+    let ranges = ranges
+        .into_iter()
+        .map(|(start, end)| T::decode(start)..=T::decode(end));
+    RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
+}
+
+/// [`Engine::CubeCl`] and [`Engine::CubeClOrCpu`]: encodes the keys (32-bit keys for types that
+/// fit, halving the memory traffic), sorts them and finds the ranges on the GPU, and decodes the
+/// ranges. `CubeClOrCpu` falls back to the CPU for key types without a GPU representation or
+/// when no GPU is available.
+#[cfg(feature = "cubecl_experimental")]
+fn from_slice_cubecl<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
+    if T::KEY_WORDS == 0 || !cubecl::available() {
+        assert!(
+            engine == Engine::CubeClOrCpu,
+            "Engine::CubeCl: unsupported key type or no CUDA or HIP GPU is available"
+        );
+        return from_slice_cpu(values, all_threads());
+    }
+    let pool = thread_pool(all_threads());
+    let ranges: Vec<(u64, u64)> = if T::KEY_WORDS == 1 {
+        let gap = T::GAP.map(|(left, right)| {
+            (
+                u32::try_from(left).expect("32-bit gap exceeded u32"),
+                u32::try_from(right).expect("32-bit gap exceeded u32"),
+            )
+        });
+        let encode = |value: T| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32");
+        pool.install(|| cubecl::ranges(values, encode, gap))
+            .into_iter()
+            .map(|(start, end)| (u64::from(start), u64::from(end)))
+            .collect()
+    } else {
+        pool.install(|| cubecl::ranges(values, T::encode, T::GAP))
     };
     let ranges = ranges
         .into_iter()
@@ -485,9 +552,9 @@ pub(super) fn host_ranges<K: Copy + Into<u64>>(
     ranges
 }
 
-fn from_slice_cpu<T: crate::Integer>(values: &mut [T], threads: NonZeroUsize) -> RangeSetBlaze<T> {
+fn from_slice_cpu<T: GpuElement>(values: &mut [T], threads: NonZeroUsize) -> RangeSetBlaze<T> {
     sort_in_place(values, threads);
-    RangeSetBlaze::from_slice(&*values)
+    T::from_sorted_slice(values, threads)
 }
 
 fn sort_in_place<T: Ord + Send>(values: &mut [T], threads: NonZeroUsize) {
@@ -1402,10 +1469,21 @@ macro_rules! gpu_api_one {
 
 pub(crate) use gpu_api_one;
 
+/// Overrides [`GpuElement::from_sorted_slice`] with the parallel SIMD range finder, for the types
+/// that have one (every `GpuElement` except the nightly `f16`/`f128` floats).
+macro_rules! parallel_from_sorted_slice {
+    () => {
+        fn from_sorted_slice(sorted: &[Self], threads: NonZeroUsize) -> RangeSetBlaze<Self> {
+            parallel_ranges::from_sorted_slice(sorted, threads)
+        }
+    };
+}
+
 macro_rules! unsigned_gpu {
     ($type:ty, $words:expr) => {
         impl GpuElement for $type {
             const KEY_WORDS: u8 = $words;
+            parallel_from_sorted_slice!();
             fn encode(self) -> u64 {
                 u64::try_from(self).expect("GPU key exceeded u64")
             }
@@ -1420,6 +1498,7 @@ macro_rules! signed_gpu {
     ($type:ty, $unsigned:ty, $sign:expr, $words:expr) => {
         impl GpuElement for $type {
             const KEY_WORDS: u8 = $words;
+            parallel_from_sorted_slice!();
             fn encode(self) -> u64 {
                 u64::try_from(self.cast_unsigned() ^ $sign).expect("GPU key exceeded u64")
             }
@@ -1432,6 +1511,15 @@ macro_rules! signed_gpu {
 }
 
 macro_rules! cpu_only {
+    // Types with the SIMD range finder.
+    (simd: $($type:ty),+ $(,)?) => {$(
+        impl GpuElement for $type {
+            const KEY_WORDS: u8 = 0;
+            fn encode(self) -> u64 { unreachable!("CPU-only GPU element") }
+            fn decode(_key: u64) -> Self { unreachable!("CPU-only GPU element") }
+            parallel_from_sorted_slice!();
+        }
+    )+};
     ($($type:ty),+ $(,)?) => {$(
         impl GpuElement for $type {
             const KEY_WORDS: u8 = 0;
@@ -1462,6 +1550,7 @@ signed_gpu!(isize, usize, 0x8000_0000_0000_0000, 2);
 impl GpuElement for char {
     const KEY_WORDS: u8 = 1;
     const GAP: Option<(u64, u64)> = Some((0xd7ff, 0xe000));
+    parallel_from_sorted_slice!();
     fn encode(self) -> u64 {
         u64::from(u32::from(self))
     }
@@ -1473,6 +1562,7 @@ impl GpuElement for char {
 
 impl GpuElement for Ipv4Addr {
     const KEY_WORDS: u8 = 1;
+    parallel_from_sorted_slice!();
     fn encode(self) -> u64 {
         u64::from(u32::from(self))
     }
@@ -1483,6 +1573,7 @@ impl GpuElement for Ipv4Addr {
 
 impl GpuElement for NotNanF32 {
     const KEY_WORDS: u8 = 1;
+    parallel_from_sorted_slice!();
     const GAP: Option<(u64, u64)> = Some((0x7fff_fffe, 0x8000_0000));
     fn encode(self) -> u64 {
         u64::from(gpu_not_nan_f32_to_ordered(self.into_inner()).cast_unsigned() ^ 0x8000_0000)
@@ -1496,6 +1587,7 @@ impl GpuElement for NotNanF32 {
 
 impl GpuElement for NotNanF64 {
     const KEY_WORDS: u8 = 2;
+    parallel_from_sorted_slice!();
     const GAP: Option<(u64, u64)> = Some((0x7fff_ffff_ffff_fffe, 0x8000_0000_0000_0000));
     fn encode(self) -> u64 {
         gpu_not_nan_f64_to_ordered(self.into_inner()).cast_unsigned() ^ 0x8000_0000_0000_0000
@@ -1507,7 +1599,7 @@ impl GpuElement for NotNanF64 {
     }
 }
 
-cpu_only!(u128, i128, Ipv6Addr, TotalF32, TotalF64);
+cpu_only!(simd: u128, i128, Ipv6Addr, TotalF32, TotalF64);
 #[cfg(feature = "float_nightly_experimental")]
 cpu_only!(NotNanF128, TotalF16, TotalF128);
 
@@ -1836,6 +1928,13 @@ mod tests {
             engines.push(Engine::HipOrCpu);
             if gpu_capable && hip::available() {
                 engines.push(Engine::Hip);
+            }
+        }
+        #[cfg(feature = "cubecl_experimental")]
+        {
+            engines.push(Engine::CubeClOrCpu);
+            if gpu_capable && cubecl::available() {
+                engines.push(Engine::CubeCl);
             }
         }
         #[cfg(feature = "offload_nightly_experimental")]

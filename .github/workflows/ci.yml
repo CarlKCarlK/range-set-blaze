@@ -75,7 +75,8 @@ jobs:
           cargo check --tests --features "float_nightly_experimental"
           # Offload has a separate newer-nightly job. cuda and cutile are left out: both depend
           # on cuda-bindings, whose build script needs a CUDA 13 toolkit the hosted runners lack.
-          cargo test --verbose --features std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental
+          # cubecl_experimental builds without one; with no GPU its tests check the CPU fallback.
+          cargo test --verbose --features std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental,cubecl_experimental
 
   docs_and_audit:
     name: Check docs and audit dependencies

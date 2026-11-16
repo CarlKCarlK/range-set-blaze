@@ -1,0 +1,8 @@
+# gpu_ingest --quick --cpu 16 --type u32 100000000; duplicates, shuffled; one line per run; columns cut from the full CSV
+engine,cpu_16_ms,cpu_radix_16_ms,gpu_ms
+cubecl,212.509,122.916,223.738
+cubecl,214.746,125.638,221.662
+cubecl,217.680,130.037,221.660
+hip,219.009,131.099,203.795
+hip,219.440,133.111,212.403
+hip,220.580,128.206,200.999

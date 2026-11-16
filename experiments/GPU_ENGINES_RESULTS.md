@@ -24,6 +24,7 @@ workshop on choosing between SIMD, threads, and GPUs in Rust.
 | `Wgpu` | any (Vulkan, DX12, Metal) | Portable compute shaders through wgpu |
 | `Offload` | NVIDIA or AMD RDNA | Rust kernels through Rust's nightly `std::offload` (OpenMP runtime) |
 | `Hip` | AMD RDNA | The same Rust kernels as `Offload`, launched directly through AMD's HIP runtime |
+| `CubeCl` | NVIDIA or AMD | Rust kernels compiled at run time by CubeCL for CUDA or HIP (uncommitted, added November 15) |
 
 `Offload` and `Hip` share one kernel source. The GPU engines all radix-sort on the GPU,
 find the ranges there, and download only the ranges.
@@ -42,7 +43,7 @@ find the ranges there, and download only the ranges.
   encoding, transfers, sorting, range finding, and freeing both the result and the
   cloned input. Copying the input is outside the timer. Cold initialization is excluded
   by the correctness check and warmup before sampling.
-- **Environment.** CPU, CUDA-Oxide, cuTile, offload, and HIP run under WSL2. wgpu runs as
+- **Environment.** CPU, CUDA-Oxide, cuTile, offload, HIP, and `CubeCl` run under WSL2. wgpu runs as
   a native Windows build; the WSL2 configurations used for these runs selected a CPU
   renderer for wgpu. This is not a general limitation of wgpu under WSL2: earlier
   [AMD and NVIDIA portability measurements](AMD_NVIDIA_PORTABILITY_BENCHMARK.md)
@@ -98,6 +99,38 @@ optimal thread count. Cross-OS comparisons also include compiler and driver diff
   (`Cpu(16)`), every GPU engine except wgpu looks like a clear win on both machines.
 - **Windows CPU timings differ from WSL2.** wgpu loses to `CpuRadix(16)` in the
   same-OS controls on both machines; desktop wgpu and comparison-sort ranges overlap.
+
+## 100M `u32` values: same-session rerun with `CubeCl` (November 15)
+
+The `CubeCl` engine was measured later, from the uncommitted working tree that also has
+parallel range finding after the CPU sorts. To compare it fairly, the nearest engines were
+rerun in the same sessions with the same harness and arguments. Each row is 3 runs, each the
+median of 3 samples. During the desktop runs, another program kept the GPU about 40% busy,
+so desktop GPU times may be slightly pessimistic.
+
+| Machine | `CubeCl` ms | Vendor engine ms | `CpuRadix(16)` ms | `Cpu(16)` ms |
+| --- | ---: | ---: | ---: | ---: |
+| Desktop | 138–146 | `Cuda` 130–133; `CuTile` 215–224 | 169–182 | 216–251 |
+| Laptop | 222–224 | `Hip` 201–212 | 123–133 | 213–221 |
+
+- **One code base comes within 5–10% of each vendor-specific engine.** `CubeCl` uses about
+  790 code LOC for both vendors. `Cuda` and `Hip` together take about 2,700.
+- **It is the only engine that runs on both machines' GPUs from the same kernels** (wgpu
+  does too, but only as a native Windows build in these measurements).
+- **The CPU still wins on the laptop.** `CpuRadix(16)` is about 1.6× faster than any GPU
+  engine there.
+- **`CpuRadix(16)` is faster than in the earlier table** (169–182 against 213–225 ms on
+  the desktop) because it now finds ranges in parallel after the sort.
+- **Copies dominated the first version.** With `CubeCL`'s built-in transfers, 100M keys took
+  250–570 ms to copy. Driver copies through reused pinned buffers, with keys encoded
+  straight into them, brought the desktop total from about 380 ms to 138–146 ms.
+
+Raw data: [desktop `CubeCl`](results/table100m_desktop_cubecl_wsl_20261115.csv), [desktop
+`Cuda` and `CuTile`](results/table100m_desktop_cuda_cutile_wsl_20261115.csv), [laptop
+`CubeCl` and `Hip`](results/table100m_laptop_cubecl_hip_wsl_20261115.csv). `CubeCl` builds
+with `--features cubecl_experimental` on stable Rust; set `RANGE_SET_BLAZE_REQUIRE_CUBECL_GPU=1`
+to require a GPU. On the laptop it also needs the HIP runtime paths from the
+[offload guide](../docs/offload.md).
 
 ## 2³⁰ values (1.07 billion `u64` keys, duplicates, shuffled)
 

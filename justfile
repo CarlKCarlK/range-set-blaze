@@ -9,7 +9,7 @@ nightly := "nightly-2026-10-12"
 # std::offload needs a newer compiler and NVIDIA toolkit, separately from portable CI.
 offload_nightly := "nightly-2026-11-12"
 # Keep the existing all-features coverage; offload alone uses its dedicated newer nightly.
-non_offload_features := "std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental,cuda,cutile"
+non_offload_features := "std,test_util,from_slice,shuffled_slices,float_nightly_experimental,cursor_nightly_experimental,cuda,cutile,cubecl_experimental"
 
 # MSRV: keep in sync with `rust-version` in Cargo.toml and the `test_msrv` job in ci.yml.
 msrv := "1.89"
@@ -38,6 +38,7 @@ ci-nightly: test-nightly test-offload check-hip
 clippy:
     cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
     cargo clippy --verbose --all-targets --features shuffled_slices -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
+    cargo clippy --verbose --all-targets --features cubecl_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Preview lints on the newest stable toolchain, ignoring the pinned CI toolchain.
 # Run this deliberately when evaluating a Rust-toolchain update; it is not part of
@@ -77,6 +78,11 @@ check-hip toolchain=offload_nightly:
     rustfmt +{{toolchain}} --check --edition 2024 src/gpu/offload/hip_native.rs
     cargo +{{toolchain}} check --features hip_nightly_experimental --lib --tests
     cargo +{{toolchain}} clippy --features hip_nightly_experimental --lib --tests -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
+
+# Tests the CubeCL engine. Without a GPU, `Engine::CubeClOrCpu` falls back to the CPU; set
+# RANGE_SET_BLAZE_REQUIRE_CUBECL_GPU=1 to require an NVIDIA (CUDA driver) or AMD (HIP runtime) GPU.
+test-cubecl:
+    cargo test --release --features cubecl_experimental --lib gpu
 
 # Quick check before commit (clippy + basic tests)
 pre-commit: clippy
