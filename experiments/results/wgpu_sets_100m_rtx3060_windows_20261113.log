@@ -1,0 +1,5 @@
+Benchmark date: 2026-11-13
+Machine: Ryzen 9 7950X, RTX 3060; native Windows, Vulkan, launched from WSL2
+Source: 8f2f4966 (gpu-on-simd), built from \\wsl.localhost with cargo +1.99.1 build --release --locked --features shuffled_slices --bin gpu_ingest
+Run: gpu_ingest.exe --cpu 16 --cpu 32 --type u32 100000000
+adapter="NVIDIA GeForce RTX 3060" backend=Vulkan device_type=DiscreteGpu

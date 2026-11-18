@@ -1,0 +1,21 @@
+=========================================
+RUSTC-CODEGEN-CUDA: range-set-blaze
+=========================================
+
+Detected GPU arch: sm_86 (via nvidia-smi)
+
+This is the proper cargo workflow:
+  CARGO_ENCODED_RUSTFLAGS=<cuda-oxide flags> CARGO_PROFILE_*=<pins> cargo run
+  (a custom --profile takes the pins as --config profile.<name>.<key>=<value>)
+
+Building and running range-set-blaze (bin: gpu_ingest)...
+
+workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms,cpu_16_ms,cpu_32_ms,gpu_only_ms,cuda_ms,cutile_ms,offload_ms
+distinct,shuffled,u32,10000000,10000000,39063,213.596,124.763,29.030,29.794,,17.401,34.915,
+distinct,in_order,u32,10000000,10000000,39063,1.861,6.478,6.926,6.916,,17.385,35.848,
+duplicates,shuffled,u32,10000000,625000,2442,203.900,113.325,28.765,32.904,,17.659,32.502,
+duplicates,in_order,u32,10000000,625000,2442,6.757,11.069,11.162,11.444,,16.580,31.902,
+distinct,shuffled,u32,100000000,100000000,390625,2313.323,1364.088,264.524,253.843,,148.238,264.822,
+distinct,in_order,u32,100000000,100000000,390625,21.671,55.678,54.948,55.618,,149.047,268.223,
+duplicates,shuffled,u32,100000000,6250000,24415,2143.190,1264.595,287.657,292.610,,139.832,264.901,
+duplicates,in_order,u32,100000000,6250000,24415,68.302,105.414,105.291,106.985,,136.260,256.530,

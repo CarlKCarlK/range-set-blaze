@@ -4,6 +4,8 @@
 #![cfg_attr(feature = "float_nightly_experimental", feature(f16))]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f128))]
 #![cfg_attr(feature = "cursor_nightly_experimental", feature(btree_cursors))]
+// Newer nightlies need more trait-solver depth for wgpu's nested synchronization types.
+#![cfg_attr(feature = "offload_nightly_experimental", recursion_limit = "256")]
 
 extern crate alloc;
 #[cfg(feature = "std")]
@@ -34,6 +36,10 @@ pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 pub mod gaps;
 pub use gaps::{FillGapsIter, FillGapsIterMap};
 
+#[cfg(feature = "shuffled_slices")]
+mod gpu;
+#[cfg(feature = "shuffled_slices")]
+pub use gpu::Engine;
 pub mod joins;
 
 pub mod float;

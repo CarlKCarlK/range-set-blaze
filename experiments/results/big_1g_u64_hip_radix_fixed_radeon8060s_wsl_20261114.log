@@ -1,0 +1,4 @@
+Benchmark date: 2026-11-14
+Machine: Ryzen AI Max+ PRO 395, Radeon 8060S, WSL2
+Run: nice -n 10 gpu_ingest --quick --cpu 16 --type u64 1073741824 (features hip_nightly_experimental)
+Source: eceb53f7 (CpuRadix fixed: key - min digits, adaptive top split).

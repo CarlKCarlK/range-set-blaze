@@ -1,0 +1,5 @@
+Benchmark date: 2026-11-14
+Machine: Ryzen AI Max+ PRO 395, Radeon 8060S, WSL2 (46 GB visible to WSL)
+Run: nice -n 10 gpu_ingest --quick --cpu 16 --type u64 1073741824 (features hip_nightly_experimental; RANGE_SET_BLAZE_REQUIRE_HIP_GPU=1)
+--quick: duplicates/shuffled only, single-threaded columns skipped, median of 3.
+Engine::Hip uses about 16 GB of GPU memory (keys + scratch) at this size.

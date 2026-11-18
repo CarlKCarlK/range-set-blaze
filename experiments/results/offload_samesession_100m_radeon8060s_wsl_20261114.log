@@ -1,0 +1,4 @@
+Benchmark date: 2026-11-14
+Same machine, source, and session as hip_100m_radeon8060s_wsl_20261114, run right after it, for a like-for-like HIP vs offload comparison.
+Build: RANGE_SET_BLAZE_OFFLOAD_ARCH=gfx1151 cargo +nightly-2026-11-12 build --release --locked --features offload_nightly_experimental --bin gpu_ingest
+Script: C:\deldir\rsb-gpu-bench\offload_bench_hipdir.sh

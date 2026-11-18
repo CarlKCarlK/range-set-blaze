@@ -1,0 +1,7 @@
+Benchmark date: 2026-11-14
+Machine: Ryzen AI Max+ PRO 395, Radeon 8060S (gfx1151), WSL2; HIP 7.2.1 runtime unpacked user-locally (hip-runtime-amd, comgr) next to the HSA runtime
+Build: RANGE_SET_BLAZE_ROCM_LIB=.../opt/rocm-7.2.1/lib cargo +nightly-2026-11-12 build --release --locked --features hip_nightly_experimental --bin gpu_ingest
+Run: nice -n 5 gpu_ingest --cpu 16 --type u32 100000000 (RANGE_SET_BLAZE_REQUIRE_HIP_GPU=1)
+hip_ms: Engine::Hip (offload kernels launched via HIP; chunked pinned uploads, 8 MB chunks)
+Scripts: C:\deldir\rsb-gpu-bench\hip_bench.sh, hip_test.sh, hip_install.sh
+The laptop ran about 10% slower than on 2026-11-13 (compare the CPU columns).

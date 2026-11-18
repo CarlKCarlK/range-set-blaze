@@ -1,0 +1,7 @@
+Benchmark date: 2026-11-13
+Machine: HP ZBook Ultra G1a, Ryzen AI Max+ PRO 395, Radeon 8060S; native Windows, Vulkan (WGPU_BACKEND=vulkan), managed over SSH
+Source: de86a5de (wgpu sorter/compactor cache removed), sent with git archive to %LOCALAPPDATA%\Temp\rsb-src; cargo +1.99.1 build --release --locked --features shuffled_slices --bin gpu_ingest
+Run: gpu_ingest.exe --cpu 16 --cpu 32 --type u32 100000000
+Script: C:\deldir\rsb-gpu-bench\amd.ps1 (desktop copy)
+Caution: CPU columns are 4-17% slower than the cached-wgpu run earlier the same evening, so the machine itself ran slower; SSH was unresponsive during the CPU phases.
+adapter="AMD Radeon(TM) 8060S Graphics" backend=Vulkan device_type=IntegratedGpu

@@ -1,0 +1,155 @@
+<section id="speed-code-loc">
+  <h2>Speed vs code size</h2>
+  <div>100 million shuffled duplicate u32 values</div>
+  <div>Higher = faster. Farther left = less code.</div>
+  <section class="speed-panel">
+    <h3>Desktop · Ryzen 9 7950X + RTX 3060</h3>
+    <svg class="speed-plot" data-machine="desktop" role="img" aria-label="Desktop throughput versus repository code lines, with each engine labeled."></svg>
+  </section>
+  <section class="speed-panel">
+    <h3>Laptop · Ryzen AI Max+ PRO 395 + Radeon 8060S</h3>
+    <svg class="speed-plot" data-machine="laptop" role="img" aria-label="Laptop throughput versus repository code lines, with each engine labeled."></svg>
+  </section>
+  <div class="speed-legend"><span class="cpu">●</span> CPU <span class="gpu">▲</span> GPU <span class="cpu">○</span> † Older one-thread measurement; might be out of date ‡ November 14; not rerun</div>
+  <div class="text-small">Points: speed at the midpoint of the reported time range. Bars: observed range, not confidence intervals.</div>
+  <div class="text-small">Desktop: November 15, except ‡ November 14. Laptop: November 16, all engines rerun sequentially. Three run medians per GPU engine; CPU bars pool six desktop or nine laptop WSL2 run medians. One-thread CPU points retain older measurements. Desktop GPU had about 40% background activity. CubeCL runs the same Rust kernels on both GPUs (CUDA on the desktop, HIP on the laptop).</div>
+  <div class="text-small">wgpu ran on Windows; other engines ran under WSL2. LOC includes shared backend and build code. It excludes dependency implementations (notably std/Rayon, CubeCL, and Lampshade), common dispatch/encoding, and the range-building core.</div>
+</section>
+<style>
+  /* Soft neutral gray, adjusted to the page theme. */
+  #speed-code-loc { --plot-background: color-mix(in srgb, var(--foreground) 7%, var(--background)); display: flex; flex-direction: column; gap: calc(var(--font-size-base) * .5); max-inline-size: 64rem; margin-inline: auto; }
+  #speed-code-loc .speed-panel { margin-top: calc(var(--font-size-base) * .8); }
+  #speed-code-loc .speed-plot { display: block; width: 100%; overflow: visible; }
+  #speed-code-loc .plot-area { fill: var(--plot-background); pointer-events: none; }
+  #speed-code-loc .best-corner { font-weight: 500; }
+  #speed-code-loc .grid { stroke: color-mix(in srgb, var(--foreground) 16%, transparent); stroke-width: 1; }
+  #speed-code-loc .axis { stroke: var(--muted-foreground); stroke-width: 1; }
+  #speed-code-loc text { fill: var(--foreground); font: inherit; }
+  #speed-code-loc .ticks { fill: var(--foreground); }
+  #speed-code-loc .leader { stroke: var(--muted-foreground); stroke-width: 1; fill: none; pointer-events: none; }
+  #speed-code-loc .cpu { color: var(--viz-series-1); }
+  #speed-code-loc .gpu { color: var(--viz-series-2); }
+  #speed-code-loc .range { stroke: currentColor; stroke-width: 2; pointer-events: none; }
+  #speed-code-loc .mark { fill: currentColor; }
+  #speed-code-loc .older { fill: var(--plot-background); stroke: currentColor; stroke-width: 2; }
+  #speed-code-loc .point-label { pointer-events: none; paint-order: stroke; stroke: var(--plot-background); stroke-width: 5; stroke-linejoin: round; }
+</style>
+<script>
+(() => {
+  const root = document.getElementById('speed-code-loc');
+  const svgNamespace = 'http://www.w3.org/2000/svg';
+  const datasets = {
+    desktop: [
+      { name: 'CUDA-Oxide', loc: 1182, low: 130, high: 133, gpu: true },
+      { name: 'CubeCL', loc: 788, low: 138, high: 146, gpu: true },
+      { name: 'Offload ‡', loc: 1717, low: 164, high: 168, gpu: true },
+      { name: 'CPU radix · 16t', loc: 306, low: 169, high: 182 },
+      { name: 'cuTile', loc: 850, low: 215, high: 224, gpu: true },
+      { name: 'CPU sort · 16t', loc: 154, low: 216, high: 251 },
+      { name: 'wgpu · Windows ‡', loc: 891, low: 295, high: 392, gpu: true },
+      { name: 'CPU radix · 1t †', loc: 306, low: 673, high: 673, older: true },
+      { name: 'CPU sort · 1t †', loc: 154, low: 1249, high: 1249, older: true }
+    ],
+    laptop: [
+      { name: 'CPU radix · 16t', loc: 306, low: 127, high: 136 },
+      { name: 'Offload', loc: 1717, low: 194, high: 198, gpu: true },
+      { name: 'HIP', loc: 1550, low: 201, high: 209, gpu: true },
+      { name: 'CubeCL', loc: 788, low: 230, high: 235, gpu: true },
+      { name: 'CPU sort · 16t', loc: 154, low: 216, high: 242 },
+      { name: 'wgpu · Windows', loc: 891, low: 526, high: 545, gpu: true },
+      { name: 'CPU radix · 1t †', loc: 306, low: 643, high: 643, older: true },
+      { name: 'CPU sort · 1t †', loc: 154, low: 1709, high: 1709, older: true }
+    ]
+  };
+  function element(parent, tag, attributes, text) {
+    const node = document.createElementNS(svgNamespace, tag);
+    for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+    if (text !== undefined) node.textContent = text;
+    parent.appendChild(node);
+    return node;
+  }
+  function draw(svg) {
+    const width = svg.clientWidth || 700;
+    const compact = width < 500;
+    const height = compact ? 500 : 400;
+    const margin = { left: 54, right: 20, top: 45, bottom: 52 };
+    const right = width - margin.right;
+    const bottom = height - margin.bottom;
+    const x = value => margin.left + value / 1900 * (right - margin.left);
+    const y = value => bottom - value / 950 * (bottom - margin.top);
+    svg.setAttribute('height', height);
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    svg.replaceChildren();
+    element(svg, 'desc', {}, 'Each point is a CPU or GPU engine. Shared backend and build code is included in code size; dependency implementation code is excluded. Higher and farther left is better. Older one-thread CPU results have hollow markers.');
+    element(svg, 'rect', { x: margin.left, y: margin.top, width: right - margin.left, height: bottom - margin.top, class: 'plot-area' });
+    element(svg, 'text', { x: margin.left, y: 23 }, compact ? 'Million values / second ↑' : 'Speed · million values / second ↑');
+    for (const tick of [0, 200, 400, 600, 800]) {
+      element(svg, 'line', { x1: margin.left, x2: right, y1: y(tick), y2: y(tick), class: 'grid' });
+      element(svg, 'text', { x: margin.left - 10, y: y(tick) + 4, 'text-anchor': 'end', class: 'ticks text-small' }, String(tick));
+    }
+    for (const tick of compact ? [0, 900, 1800] : [0, 400, 800, 1200, 1600]) {
+      element(svg, 'line', { x1: x(tick), x2: x(tick), y1: bottom, y2: bottom + 5, class: 'axis' });
+      element(svg, 'text', { x: x(tick), y: bottom + 23, 'text-anchor': 'middle', class: 'ticks text-small' }, tick.toLocaleString());
+    }
+    element(svg, 'text', { x: (margin.left + right) / 2, y: height - 5, 'text-anchor': 'middle' }, 'Code LOC →');
+    const bestCorner = element(svg, 'text', { x: margin.left + 12, y: margin.top + 23, class: 'best-corner', 'data-tooltip': 'Best direction: faster execution and fewer lines of code.' }, compact ? '↖ Best' : '↖ Best: faster, less code');
+    const bestBounds = bestCorner.getBBox();
+    const points = datasets[svg.dataset.machine].map(row => ({ ...row, px: x(row.loc), py: y(100000 / ((row.low + row.high) / 2)) }));
+    const occupied = points.map(point => ({ x: point.px - 8, y: point.py - 8, width: 16, height: 16 }));
+    occupied.push({ x: bestBounds.x, y: bestBounds.y, width: bestBounds.width, height: bestBounds.height });
+    const intersects = (first, second) => first.x < second.x + second.width + 4 && first.x + first.width + 4 > second.x && first.y < second.y + second.height + 4 && first.y + first.height + 4 > second.y;
+    const labels = [];
+    // Low points have fewer label positions before the axis, so place them first.
+    for (const point of [...points].sort((left, right) => right.py - left.py)) {
+      const group = element(svg, 'g', { class: point.gpu ? 'gpu' : 'cpu' });
+      const lowerY = y(100000 / point.high);
+      const upperY = y(100000 / point.low);
+      if (point.low !== point.high) {
+        element(group, 'line', { x1: point.px, x2: point.px, y1: lowerY, y2: upperY, class: 'range' });
+        for (const capY of [lowerY, upperY]) element(group, 'line', { x1: point.px - 5, x2: point.px + 5, y1: capY, y2: capY, class: 'range' });
+      }
+      const throughput = 100000 / ((point.low + point.high) / 2);
+      const tooltip = `${point.name.replace('16t', '16 threads').replace('1t', '1 thread')}: ${point.loc.toLocaleString()} code LOC; ${point.low === point.high ? point.low : point.low + '–' + point.high} ms; ${throughput.toFixed(1)} million values/second.${point.older ? ' Earlier measurement; might be out of date.' : ''}`;
+      const markAttributes = { class: point.older ? 'older' : 'mark', 'data-tooltip': tooltip, 'aria-label': tooltip };
+      if (point.gpu) {
+        element(group, 'polygon', { ...markAttributes, points: `${point.px},${point.py - 7} ${point.px - 7},${point.py + 6} ${point.px + 7},${point.py + 6}` });
+      } else {
+        element(group, 'circle', { ...markAttributes, cx: point.px, cy: point.py, r: 6 });
+      }
+      const labelName = compact ? point.name.replace(' · Windows', ' (Win)').replace(' · ', ' ') : point.name;
+      const label = element(svg, 'text', { x: 0, y: 0, class: 'point-label' }, labelName);
+      const bounds = label.getBBox();
+      let chosen;
+      const offsets = Array.from({ length: 24 }, (_, index) => {
+        const step = Math.floor(index / 2) * 22;
+        const below = point.older ? index % 2 === 0 : index % 2 !== 0;
+        return below ? 24 + step : -22 - step;
+      });
+      for (const offset of offsets) {
+        for (const horizontal of [14, -bounds.width - 14, 50, 90, 130, -bounds.width - 50]) {
+          const proposedX = point.px + horizontal;
+          const labelX = Math.max(margin.left + 2, Math.min(right - bounds.width, proposedX));
+          const baseline = point.py + offset;
+          const box = { x: labelX, y: baseline + bounds.y, width: bounds.width, height: bounds.height };
+          if (box.y < margin.top || box.y + box.height > bottom + 1 || occupied.some(other => intersects(box, other))) continue;
+          chosen = { labelX, baseline, box };
+          break;
+        }
+        if (chosen) break;
+      }
+      if (!chosen) throw new Error('No non-overlapping point label position');
+      occupied.push(chosen.box);
+      label.setAttribute('x', chosen.labelX);
+      label.setAttribute('y', chosen.baseline);
+      const endX = Math.max(chosen.box.x, Math.min(chosen.box.x + chosen.box.width, point.px));
+      element(svg, 'line', { x1: point.px, y1: point.py, x2: endX, y2: chosen.box.y + chosen.box.height / 2, class: 'leader' });
+      labels.push(label);
+    }
+    for (const label of labels) svg.appendChild(label);
+  }
+  const observer = new ResizeObserver(() => {
+    for (const svg of root.querySelectorAll('.speed-plot')) draw(svg);
+  });
+  observer.observe(root);
+})();
+</script>

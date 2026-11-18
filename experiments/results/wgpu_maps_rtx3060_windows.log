@@ -1,0 +1,2 @@
+adapter="NVIDIA GeForce RTX 3060" backend=Vulkan device_type=DiscreteGpu
+cold: context 452.6 ms, shader pipelines 0.8 ms

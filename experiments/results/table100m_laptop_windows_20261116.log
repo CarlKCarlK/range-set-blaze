@@ -1,0 +1,81 @@
+Source commit: 56041ee2 (git archive; same source as WSL2 rerun)
+Command: gpu_ingest --quick --cpu 16 --cpu 32 --type u32 100000000
+WGPU_BACKEND=vulkan
+Runner: C:\deldir\rsb-gpu-bench\session20261116\laptop_windows.ps1
+
+2026-11-16T14:35:16.2193288Z
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+binary: rustc
+commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+commit-date: 2026-10-13
+host: x86_64-pc-windows-msvc
+release: 1.99.1
+LLVM version: 23.1.1
+Power Scheme GUID: fb5220ff-7e1a-47aa-9a42-50ffbf45c673  (HP Optimized (Modern Standby))
+
+
+Name          : Microsoft Remote Display Adapter
+DriverVersion : 10.0.26100.9818
+
+Name          : AMD Radeon(TM) 8060S Graphics
+DriverVersion : 32.0.22050.4002
+
+
+
+
+
+
+Algorithm : SHA256
+Hash      : 256FA40D02AE0B2FA92E9DC83568CDBD2C9692286FB04D8E4ABC8E95CD168C79
+Path      : C:\Users\carlk\AppData\Local\Temp\rsb-src-session-20261116\Cargo.lock
+
+Algorithm : SHA256
+Hash      : 0FD8233E07DDF52E4B0F20B6BA3F2B2AEB595401356D34BD6D904594587690D4
+Path      : C:\Users\carlk\AppData\Local\Temp\rsb-src-session-20261116\src\gpu.rs
+
+Algorithm : SHA256
+Hash      : 85050FDC49507318F55E09AA6130DEEC765D2EE68756B1694117A43B06DEED2A
+Path      : C:\Users\carlk\AppData\Local\Temp\rsb-src-session-20261116\src\gpu\cpu_radix.rs
+
+Algorithm : SHA256
+Hash      : FAF1579E3EEDC7726DB7F41A6D540761EFEF7D46F17E0A3A244047DD9412EA7C
+Path      : C:\Users\carlk\AppData\Local\Temp\rsb-src-session-20261116\experiments\gpu_ingest.rs
+
+
+
+
+
+=== Build ===
+    Updating crates.io index
+   Compiling range-set-blaze v0.8.0 (C:\Users\carlk\AppData\Local\Temp\rsb-src-session-20261116)
+    Finished `release` profile [optimized] target(s) in 35.94s
+
+=== Run 1 ===
+gpu_ingest.exe : adapter="AMD Radeon(TM) 8060S Graphics" backend=Vulkan device_type=IntegratedGpu
+At line:23 char:5
++     & (Join-Path $env:CARGO_TARGET_DIR 'release\gpu_ingest.exe') --qu ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (adapter="AMD Ra...e=IntegratedGpu:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+available threads=32
+
+=== Run 2 ===
+gpu_ingest.exe : adapter="AMD Radeon(TM) 8060S Graphics" backend=Vulkan device_type=IntegratedGpu
+At line:23 char:5
++     & (Join-Path $env:CARGO_TARGET_DIR 'release\gpu_ingest.exe') --qu ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (adapter="AMD Ra...e=IntegratedGpu:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+available threads=32
+
+=== Run 3 ===
+gpu_ingest.exe : adapter="AMD Radeon(TM) 8060S Graphics" backend=Vulkan device_type=IntegratedGpu
+At line:23 char:5
++     & (Join-Path $env:CARGO_TARGET_DIR 'release\gpu_ingest.exe') --qu ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (adapter="AMD Ra...e=IntegratedGpu:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+available threads=32

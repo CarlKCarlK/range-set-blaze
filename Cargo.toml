@@ -52,6 +52,37 @@ test_util = ["rand"]
 # Deprecated no-op, kept so `features = ["from_slice"]` still resolves.
 # `from_slice` is now always available on stable Rust.
 from_slice = []
+# Experimental: `RangeSetBlaze::from_shuffled_slice` and `RangeMapBlaze::from_shuffled_slices`,
+# which sort with several CPU threads (Rayon) or on the GPU (wgpu).
+shuffled_slices = [
+    "std",
+    "dep:castaway",
+    "dep:lampshade",
+    "dep:pollster",
+    "dep:rayon",
+    "dep:wgpu",
+]
+# Experimental, Linux only: adds `Engine::Cuda`, which runs the same pipeline as CUDA kernels
+# written in Rust with cuda-oxide, single-source in `src/gpu/cuda.rs`. Build and test it with
+# `cargo oxide` (for example `cargo oxide test -- --release --features cuda --lib gpu`), which
+# needs the CUDA toolkit and the codegen backend that `cargo oxide setup` installs.
+cuda = ["shuffled_slices", "dep:cuda-core", "dep:cuda-device", "dep:cuda-host"]
+# Experimental, Linux only, in progress: cuTile kernels in `src/gpu/cutile.rs`. Builds with plain
+# `cargo` on stable Rust, but the CUDA toolkit (its `tileiras` compiler) must be installed where the
+# program runs, since cuTile compiles kernels on first use.
+cutile = ["shuffled_slices", "dep:cutile"]
+# Experimental NVIDIA/Linux backend using Rust's nightly GPU offload compiler.
+# See docs/offload.md for the toolchain, CUDA toolkit, and runtime requirements.
+offload_nightly_experimental = ["shuffled_slices"]
+# Experimental AMD/Linux backend: the offload engine's Rust kernels, launched directly through
+# AMD's HIP runtime. Needs the same nightly toolchain as offload, plus libamdhip64 (set
+# RANGE_SET_BLAZE_ROCM_LIB to its directory if it isn't /opt/rocm/lib).
+hip_nightly_experimental = ["shuffled_slices"]
+# Experimental, Linux: adds `Engine::CubeCl`, the same pipeline as Rust kernels that CubeCL compiles
+# for NVIDIA (CUDA) or AMD (HIP) at run time, in `src/gpu/cubecl.rs`. Builds with plain `cargo` on
+# stable Rust 1.95 or newer (CubeCL's minimum, so it is left out of the MSRV check); running it
+# needs the CUDA driver or AMD's HIP runtime.
+cubecl_experimental = ["shuffled_slices", "dep:cubecl", "dep:cubecl-runtime", "dep:cubecl-hip-sys", "dep:cudarc"]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
@@ -64,6 +95,22 @@ fearless_simd = { version = "1.0.0", default-features = false, features = [
     "libm",
 ] }
 bytemuck = { version = "1.24.0", default-features = false }
+lampshade = { version = "0.13.0", optional = true }
+pollster = { version = "0.4", optional = true }
+rayon = { version = "1.10", optional = true }
+wgpu = { version = "30.0.1", optional = true }
+cuda-core = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
+cuda-device = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
+cuda-host = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
+cutile = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
+# CubeCL is alpha, with breaking changes between minor versions, so it is pinned exactly.
+cubecl = { version = "=0.11.3", default-features = false, features = ["std", "stdlib", "cuda", "hip"], optional = true }
+# For `Runtime`, which `cubecl` doesn't re-export, to reach CubeCL's CUDA buffer addresses.
+cubecl-runtime = { version = "=0.11.4", default-features = false, optional = true }
+# The HIP and CUDA driver APIs, for the CubeCL engine's pinned copies (the versions CubeCL uses).
+cubecl-hip-sys = { version = "=7.14.6085001", optional = true }
+cudarc = { version = "0.19.6", default-features = false, features = ["std", "driver", "fallback-dynamic-loading", "cuda-version-from-build-system"], optional = true }
+castaway = { version = "0.2.4", optional = true }
 
 [dev-dependencies]
 # Lets tests exercise fearless_simd's scalar fallback backend via `Level::fallback()`.
@@ -110,10 +157,39 @@ name = "bench_map"
 path = "benches/bench_map.rs"
 harness = false
 
+[[bin]]
+name = "gpu_normalize_wgpu"
+path = "experiments/gpu_normalize_wgpu.rs"
+required-features = ["shuffled_slices"]
+
+[[bin]]
+name = "gpu_ingest"
+path = "experiments/gpu_ingest.rs"
+required-features = ["shuffled_slices"]
+
+[[bin]]
+name = "gpu_map_ingest"
+path = "experiments/gpu_map_ingest.rs"
+required-features = ["shuffled_slices"]
+
+[[bin]]
+name = "gpu_sort_benchmark"
+path = "experiments/gpu_sort_benchmark.rs"
+required-features = ["shuffled_slices"]
+
 [package.metadata.docs.rs]
-# Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the
-# feature required by each gated item.
-all-features = true
+# Publish the optional APIs. Rustdoc's `doc_cfg` annotations identify the
+# feature required by each gated item. Not `all-features`: `cuda` and `cutile`
+# need a CUDA toolkit at build time (via cuda-bindings) and
+# `offload_nightly_experimental` needs a newer nightly with the offload
+# component, none of which docs.rs provides.
+features = [
+    "std",
+    "from_slice",
+    "shuffled_slices",
+    "float_nightly_experimental",
+    "cursor_nightly_experimental",
+]
 
 ###############################################################################
 # Global lint levels (stable since Rust 1.77; on older nightly use

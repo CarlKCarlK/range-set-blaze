@@ -1,0 +1,5 @@
+   Compiling range-set-blaze v0.7.0 (\\wsl.localhost\Ubuntu\home\carlk\programs\range-set-blaze)
+    Finished `release` profile [optimized] target(s) in 28.22s
+     Running `target\release\gpu_sort_benchmark.exe`
+adapter="NVIDIA GeForce RTX 3060" backend=Vulkan device_type=DiscreteGpu driver="NVIDIA" driver_info="591.86"
+random_seed=0x6a09e667f3bcc909 cpu_sort=sort_unstable

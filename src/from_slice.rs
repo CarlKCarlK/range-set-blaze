@@ -120,6 +120,18 @@ pub(crate) fn from_slice_ranges<T: SimdInteger>(
         .collect()
 }
 
+/// Returns the ranges of a **sorted** `slice` as `(start, end)` pairs: in order, disjoint, and not
+/// touching, because [`RangeCollector`] merges each range into the previous one when they touch
+/// or overlap. So, unlike [`from_slice_at_level`], the result needs no sort.
+///
+/// Used by the parallel range finder in `gpu/parallel_ranges.rs`.
+#[cfg(feature = "shuffled_slices")]
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) fn sorted_slice_ranges<T: SimdInteger>(level: Level, slice: &[T]) -> Vec<(T, T)> {
+    debug_assert!(slice.is_sorted(), "the slice must be sorted");
+    from_slice_ranges_unrolled::<T, UNROLL>(level, slice)
+}
+
 /// Like [`from_slice_ranges`], but with a given unroll factor (see [`UNROLL`]), and returning
 /// `(start, end)` pairs, which are smaller than `RangeInclusive` and so faster to collect and sort.
 // TODO When the MSRV supports the new `Copy` range types (`core::range::RangeInclusive`, which,

@@ -1,0 +1,4 @@
+workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms,cpu_16_ms,gpu_only_ms,cuda_ms,cutile_ms,offload_ms,cpu_radix_1_ms,cpu_radix_16_ms,hip_ms
+duplicates,shuffled,u32,100000000,6250000,24415,,,221.134,,130.127,215.193,,,176.715,,
+duplicates,shuffled,u32,100000000,6250000,24415,,,251.224,,133.427,215.706,,,173.133,,
+duplicates,shuffled,u32,100000000,6250000,24415,,,215.846,,133.214,223.540,,,182.178,,

@@ -1,0 +1,8 @@
+Benchmark date: 2026-11-13 (America/Los_Angeles)
+GPU: NVIDIA GeForce RTX 3060 (sm_86), WSL2; CPU: AMD Ryzen 9 7950X, 32 logical processors
+Compiler: rustc 1.102.0-nightly (3ef0c22cd 2026-11-11)
+Build: cargo +nightly-2026-11-12 build --release --locked --features offload_nightly_experimental,cutile --bin gpu_ingest
+Run: target/release/gpu_ingest --cpu 16 --cpu 32 --type u32 10000000 100000000
+adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+status=0

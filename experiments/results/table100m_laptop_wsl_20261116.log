@@ -1,0 +1,111 @@
+Source commit: 56041ee2 (git archive; clean working tree before documentation updates)
+Sequential laptop run: CubeCL, HIP, Offload, 3 runs each.
+Command: gpu_ingest --quick --cpu 16 --type u32 100000000
+GPU-required environment variables set for each backend; OMP_TARGET_OFFLOAD=MANDATORY.
+Runner: C:\deldir\rsb-gpu-bench\session20261116\laptop_wsl.sh
+
+2026-11-16T14:32:25+00:00
+carlk128
+ 08:32:25 up 16:51,  1 user,  load average: 0.00, 0.01, 0.00
+256fa40d02ae0b2fa92e9dc83568cdbd2c9692286fb04d8e4abc8e95cd168c79  Cargo.lock
+0fd8233e07ddf52e4b0f20b6ba3f2b2aeb595401356d34bd6d904594587690d4  src/gpu.rs
+e2515f6e142a5105b62afe84c4bcb3b1c6de6ee1ac6f589a5e241db808e054f5  src/gpu/cubecl.rs
+f2d0f77d495d99be6691463db2431ca0ad185e5c817b906537aa7a6d453b7699  src/gpu/hip.rs
+0051aab689a8f18408223abf62239196156ff3f2dfee04289486a6e75b2f7039  src/gpu/offload.rs
+85050fdc49507318f55e09aa6130deec765d2ee68756b1694117a43b06deed2a  src/gpu/cpu_radix.rs
+faf1579e3eedc7726db7f41a6d540761efef7d46f17e0a3a244047dd9412ea7c  experiments/gpu_ingest.rs
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+binary: rustc
+commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+commit-date: 2026-10-13
+host: x86_64-unknown-linux-gnu
+release: 1.99.1
+LLVM version: 23.1.1
+rustc 1.102.0-nightly (3ef0c22cd 2026-11-11)
+binary: rustc
+commit-hash: 3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1
+commit-date: 2026-11-11
+host: x86_64-unknown-linux-gnu
+release: 1.102.0-nightly
+LLVM version: 23.1.5
+
+=== Build cubecl ===
+cargo +1.99.1 build --release --locked --features cubecl_experimental --bin gpu_ingest
+   Compiling range-set-blaze v0.8.0 (/home/carlk/.cache/rsb-session-20261116/src)
+    Finished `release` profile [optimized] target(s) in 16.87s
+
+=== Run cubecl 1 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Run cubecl 2 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Run cubecl 3 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Build hip ===
+cargo +nightly-2026-11-12 build --release --locked --features hip_nightly_experimental --bin gpu_ingest
+   Compiling range-set-blaze v0.8.0 (/home/carlk/.cache/rsb-session-20261116/src)
+warning: overflow evaluating the requirement `OnceLock<Option<lampshade::Context>>: Sync`
+   --> src/gpu.rs:640:21
+    |
+640 | ...T: OnceL...ext>> = ...
+    |       ^^^^^...^^^^^
+    |
+    = note: which requires `Option<lampshade::Context>: Send`
+    = note: which requires `lampshade::Context: Send`
+    = note: which requires `wgpu::Queue: Send`
+    = note: which requires `wgpu::dispatch::DispatchQueue: Send`
+    = note: which requires `Arc<wgpu::backend::wgpu_core::CoreQueue>: Send`
+    = note: which requires `wgpu::backend::wgpu_core::CoreQueue: Send`
+    = note: which requires `wgpu::backend::wgpu_core::ContextWgpuCore: Send`
+    = note: which requires `Arc<wgpu::wgpu_core::global::Global>: Send`
+    = note: which requires `wgpu::wgpu_core::global::Global: Send`
+    = note: which requires `Hub: Send`
+    = note: which requires `registry::Registry<Arc<lock_api::mutex::Mutex<parking_lot::raw_mutex::RawMutex, wgpu::wgpu_core::command::ComputePass>>>: Send`
+    = note: which requires `wgc::lock::vanilla::RwLock<storage::Storage<Arc<lock_api::mutex::Mutex<parking_lot::raw_mutex::RawMutex, wgpu::wgpu_core::command::ComputePass>>>>: Send`
+    = note: which requires `lock_api::rwlock::RwLock<parking_lot::raw_rwlock::RawRwLock, storage::Storage<Arc<lock_api::mutex::Mutex<parking_lot::raw_mutex::RawMutex, wgpu::wgpu_core::command::ComputePass>>>>: Send`
+    = note: which requires `storage::Storage<Arc<lock_api::mutex::Mutex<parking_lot::raw_mutex::RawMutex, wgpu::wgpu_core::command::ComputePass>>>: Send`
+    = note: which requires `Vec<storage::Element<Arc<lock_api::mutex::Mutex<parking_lot::raw_mutex::RawMutex, wgpu::wgpu_core::command::ComputePass>>>>: Send`
+    = note: and so on...
+    = help: consider adding a manual `impl` of auto traits like `Send` for intermediate types, if auto traits are involved
+    = help: or consider increasing the recursion limit by adding a `#![recursion_limit = "256"]` attribute to your crate (`range_set_blaze`)
+    = note: this lint is attached to the whole crate and can't be disabled on a per-function basis
+    = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+    = note: for more information, see issue #159228 <https://github.com/rust-lang/rust/issues/159228>
+    = note: `#[warn(recursion_depth_exceeding_limit)]` (part of `#[warn(future_incompatible)]`) on by default
+
+warning: `range-set-blaze` (lib) generated 1 warning
+    Finished `release` profile [optimized] target(s) in 16.72s
+
+=== Run hip 1 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Run hip 2 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Run hip 3 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Build offload ===
+cargo +nightly-2026-11-12 build --release --locked --features offload_nightly_experimental --bin gpu_ingest
+   Compiling range-set-blaze v0.8.0 (/home/carlk/.cache/rsb-session-20261116/src)
+    Finished `release` profile [optimized] target(s) in 25.35s
+
+=== Run offload 1 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Run offload 2 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
+
+=== Run offload 3 ===
+adapter="llvmpipe (LLVM 20.1.2, 256 bits)" backend=Vulkan device_type=Cpu
+available threads=32
