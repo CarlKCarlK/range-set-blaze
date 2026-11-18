@@ -10,10 +10,10 @@
     <h3>Laptop · Ryzen AI Max+ PRO 395 + Radeon 8060S</h3>
     <svg class="speed-plot" data-machine="laptop" role="img" aria-label="Laptop throughput versus repository code lines, with each engine labeled."></svg>
   </section>
-  <div class="speed-legend"><span class="cpu">●</span> CPU <span class="gpu">▲</span> GPU <span class="cpu">○</span> † Older one-thread measurement; might be out of date ‡ Earlier session</div>
+  <div class="speed-legend"><span class="cpu">●</span> CPU <span class="gpu">▲</span> GPU <span class="cpu">○</span> † Older one-thread measurement; might be out of date ‡ November 14; not rerun</div>
   <div class="text-small">Points: speed at the midpoint of the reported time range. Bars: observed range, not confidence intervals.</div>
-  <div class="text-small">Same-session rerun (November 15, 3 runs each): CubeCL, CUDA-Oxide, cuTile, HIP, and the 16-thread CPU engines, which now find ranges in parallel. ‡ Earlier session (November 14), not rerun. CubeCL runs the same Rust kernels on both GPUs (CUDA on the desktop, HIP on the laptop).</div>
-  <div class="text-small">wgpu ran on Windows; other engines ran under WSL2. LOC includes shared backend and build code. It excludes dependency implementations (notably std/Rayon and Lampshade), common dispatch/encoding, and the range-building core.</div>
+  <div class="text-small">Desktop: November 15, except ‡ November 14. Laptop: November 16, all engines rerun sequentially. Three run medians per GPU engine; CPU bars pool six desktop or nine laptop WSL2 run medians. One-thread CPU points retain older measurements. Desktop GPU had about 40% background activity. CubeCL runs the same Rust kernels on both GPUs (CUDA on the desktop, HIP on the laptop).</div>
+  <div class="text-small">wgpu ran on Windows; other engines ran under WSL2. LOC includes shared backend and build code. It excludes dependency implementations (notably std/Rayon, CubeCL, and Lampshade), common dispatch/encoding, and the range-building core.</div>
 </section>
 <style>
   /* Soft neutral gray, adjusted to the page theme. */
@@ -51,12 +51,12 @@
       { name: 'CPU sort · 1t †', loc: 154, low: 1249, high: 1249, older: true }
     ],
     laptop: [
-      { name: 'CPU radix · 16t', loc: 306, low: 123, high: 133 },
-      { name: 'HIP', loc: 1550, low: 201, high: 212, gpu: true },
-      { name: 'CubeCL', loc: 788, low: 222, high: 224, gpu: true },
-      { name: 'CPU sort · 16t', loc: 154, low: 213, high: 221 },
-      { name: 'Offload ‡', loc: 1717, low: 273, high: 275, gpu: true },
-      { name: 'wgpu · Windows ‡', loc: 891, low: 571, high: 602, gpu: true },
+      { name: 'CPU radix · 16t', loc: 306, low: 127, high: 136 },
+      { name: 'Offload', loc: 1717, low: 194, high: 198, gpu: true },
+      { name: 'HIP', loc: 1550, low: 201, high: 209, gpu: true },
+      { name: 'CubeCL', loc: 788, low: 230, high: 235, gpu: true },
+      { name: 'CPU sort · 16t', loc: 154, low: 216, high: 242 },
+      { name: 'wgpu · Windows', loc: 891, low: 526, high: 545, gpu: true },
       { name: 'CPU radix · 1t †', loc: 306, low: 643, high: 643, older: true },
       { name: 'CPU sort · 1t †', loc: 154, low: 1709, high: 1709, older: true }
     ]

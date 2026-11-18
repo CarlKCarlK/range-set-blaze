@@ -5,10 +5,10 @@ from the simplest integration to the most machinery. The examples focus on sets 
 values. CPU comparison and CPU radix each have separate one-thread and 16-thread sections;
 the thread counts are configurations of an engine, not entirely separate implementations.
 
-The source snapshot is `b97205e7` plus two pieces that are not yet committed: the parallel
-range finding that both CPU engines now use after their sort (section 2) and the `CubeCL`
-engine (section 5). Excerpt line numbers refer to that working tree. The order follows the amount of repository code and
-the concepts a reader must learn, not performance rank. A short library call can hide a
+The source snapshot is `db4e68a6`, including the parallel range finding that both CPU
+engines use after their sort (section 2) and the `CubeCL` engine (section 5).
+Excerpt line numbers refer to that snapshot. The order follows the amount of repository
+code and the concepts a reader must learn, not performance rank. A short library call can hide a
 complicated algorithm in a dependency.
 
 All implementations solve the same problem. For example:
@@ -32,10 +32,13 @@ one-thread numbers might be out of date. The billion-key results are a different
 are not estimates. See [CPU and GPU engine results](GPU_ENGINES_RESULTS.md) for the
 measurement protocol, same-OS controls, and raw-data links.
 
-The multithreaded CPU times labeled **with parallel range finding** come from the in-crate
-benchmark `parallel_ranges::benchmark` (same workload, seed, warm-up, and median rules as
-`gpu_ingest`). Each is a single run median, while most GPU times are ranges over three
-runs, and they were measured on a different day from the GPU times.
+The headline multithreaded CPU and GPU times come from the same `gpu_ingest` sessions:
+November 15 on the desktop and November 16 on the laptop. Each engine has three run
+medians; WSL2 CPU ranges pool six desktop or nine laptop run medians across engine builds.
+Desktop offload and wgpu retain November 14 measurements, explicitly marked below.
+Native Windows wgpu has its own same-OS CPU controls in the results report. The separate
+`parallel_ranges::benchmark` comparisons below explain the range-finding optimization;
+they are not the headline timings.
 
 **How to read the omissions.** The Rust blocks are short, verbatim source excerpts with
 surrounding context removed; they are not standalone programs. “Shown” counts their
@@ -80,9 +83,10 @@ sorting.
 
 ## 2. CPU comparison sort, 16 threads
 
-**Speed, with parallel range finding:** desktop **219 ms**; laptop **263 ms**. In the same
-runs, the same sort followed by the one-thread range finder took 268 ms and 318 ms (the
-earlier three-run ranges were 252–278 ms and 334–365 ms). At 2³⁰ `u64` values, measured
+**Speed, with parallel range finding:** desktop **216–251 ms**; laptop **216–242 ms**.
+In a separate in-crate optimization benchmark, parallel range finding took 219 ms and
+263 ms overall, versus 268 ms and 318 ms with one-thread range finding. Those paired
+measurements describe the optimization, not the headline sessions. At 2³⁰ `u64` values, measured
 before parallel range finding: desktop **6.47–6.66 seconds**; laptop **4.42–4.68 seconds**.
 
 The overall pipeline is unchanged: sort, then build ranges. The sorting work runs
@@ -217,8 +221,9 @@ The omissions are the 163-LOC radix sorter, the shared 15-LOC thread-pool helper
 
 ## 4. CPU radix sort, 16 threads
 
-**Speed, with parallel range finding:** desktop **144 ms**; laptop **119 ms**. In the same
-runs, the same sort followed by the one-thread range finder took 195 ms and 177 ms. At 2³⁰
+**Speed, with parallel range finding:** desktop **169–182 ms**; laptop **127–136 ms**.
+In a separate in-crate optimization benchmark, parallel range finding took 144 ms and
+119 ms overall, versus 195 ms and 177 ms with one-thread range finding. At 2³⁰
 `u64` values, measured before parallel range finding: desktop **6.10 seconds**; laptop
 **5.96 seconds**.
 
@@ -267,20 +272,21 @@ only the occupied bits. `rdst` starts at the type's top byte and reads the whole
 discover that the byte is the same for every key before moving to the next byte. For
 27-bit keys in a `u64`, that is four wasted reads of 800 MB. Its first useful byte then
 splits the keys into only a handful of large buckets. On the desktop, `rdst` made the
-headline workload about 40% slower (205 ms versus 144 ms). On full-width random keys, where
+workload about 40% slower in that separate sort-comparison experiment (205 ms versus
+144 ms). On full-width random keys, where
 every bit matters, `rdst` is the fastest, so the custom sorter's advantage comes
 specifically from narrow keys.
 
 ## 5. CubeCL: one set of Rust kernels for NVIDIA and AMD
 
-**Speed:** desktop **138–146 ms**; laptop **222–224 ms**. In the same sessions, CUDA-Oxide
-took 130–133 ms on the desktop and HIP 201–212 ms on the laptop. There is no billion-key
-result yet.
+**Speed:** desktop **138–146 ms**; laptop **230–235 ms**. In the same sessions, CUDA-Oxide
+took 130–133 ms on the desktop; HIP took 201–209 ms and offload 194–198 ms on the laptop.
+There is no billion-key result yet.
 
 [CubeCL](https://github.com/tracel-ai/cubecl) compiles kernels written as ordinary Rust
 functions (marked `#[cube]`) for whichever GPU is present at run time: here NVIDIA through
-CUDA, or AMD through HIP. It is the only engine in this walkthrough that runs on both GPUs
-from one set of kernels. Covering both otherwise takes CUDA-Oxide plus HIP.
+CUDA, or AMD through HIP. Like wgpu and offload, it runs on both GPUs from one set of
+kernels. The vendor-specific alternative takes CUDA-Oxide plus HIP.
 
 The sort is a least-significant-digit radix sort with four-bit digits, taken from
 `key - min`. Like the CPU radix sorter, it runs only as many passes as `max - min` has
@@ -334,7 +340,7 @@ changes between minor versions, so it is pinned exactly, and it needs Rust 1.95 
 
 ## 6. cuTile: express the GPU work as operations on tiles
 
-**Speed:** desktop **213–225 ms**. This NVIDIA-only engine is unavailable on the
+**Speed:** desktop **215–224 ms**. This NVIDIA-only engine is unavailable on the
 Radeon laptop. No cuTile result is present in the cited billion-key table.
 
 cuTile works on a tile of 1,024 keys at once. For each three-bit digit, a tile counts
@@ -377,7 +383,9 @@ compiler, runtime, and toolkit setup are dependencies outside these 850 LOC.
 
 ## 7. wgpu: assemble a portable compute pipeline
 
-**Speed:** desktop **295–392 ms**; laptop **571–602 ms**, both on **native Windows**.
+**Speed:** desktop **295–392 ms** (November 14, not rerun); laptop **526–545 ms**
+(November 16), both on **native Windows**. Laptop same-run Windows CPU controls were
+188–194 ms for radix sort and 370–378 ms for comparison sort, both with 16 threads.
 No wgpu result is present in the cited billion-key table. These times should be compared
 with Windows CPU controls, not treated as a pure API comparison with the WSL2 engines.
 
@@ -420,7 +428,7 @@ implementations are outside these 891 LOC; a call to `record_sort` is not the so
 
 ## 8. CUDA-Oxide: implement the GPU radix algorithm explicitly
 
-**Speed:** desktop **130–134 ms**. This NVIDIA-only engine is unavailable on the
+**Speed:** desktop **130–133 ms**. This NVIDIA-only engine is unavailable on the
 Radeon laptop. No CUDA-Oxide result is present in the cited billion-key table.
 
 This engine implements an eight-bit-digit radix sort with 256 threads per block and
@@ -477,7 +485,7 @@ generated launchers, buffer implementation, and CUDA runtime are outside the cou
 
 ## 9. HIP: shared Rust kernels, direct AMD runtime calls
 
-**Speed:** laptop **222–238 ms**. This AMD engine is unavailable on the RTX 3060
+**Speed:** laptop **201–209 ms**. This AMD engine is unavailable on the RTX 3060
 desktop. At 2³⁰ `u64` values, laptop HIP took **5.30–5.54 seconds**.
 
 HIP shares its radix-sort and range-finding kernel bodies with offload. The sort is
@@ -532,7 +540,8 @@ compilation. HIP/ROCm internals are dependencies outside the count.
 
 ## 10. Offload: shared kernels plus compiler/runtime mapping machinery
 
-**Speed:** desktop **164–168 ms**; laptop **273–275 ms**. At 2³⁰ `u64` values:
+**Speed:** desktop **164–168 ms** (November 14, not rerun); laptop **194–198 ms**
+(November 16, alongside HIP and CubeCL). At 2³⁰ `u64` values:
 desktop offload took **11.61 seconds**; laptop offload was not measured in that table.
 
 The large-input algorithm shares the Rust radix and range kernel bodies used by HIP.
@@ -669,14 +678,15 @@ The practical comparison is therefore twofold: how much code the project owns, a
 how much mechanism someone must understand when modifying it. The CPU baseline is
 competitive because it combines a strong sort (Rayon's comparison sort, or a radix sort
 tuned for narrow keys) with threads, SIMD, and parallel range finding. On the headline
-workload, the desktop CPU radix engine (144 ms) now trails only CUDA-Oxide (130–134 ms) and
-beats offload and cuTile; on the laptop, the CPU radix engine (119 ms) is about twice as
-fast as the best GPU engine, HIP (222–238 ms). The CPU times come from different runs than
-the GPU times. The GPU implementations show
-how much additional work it takes to approach or exceed that baseline.
+workload, the desktop CPU radix engine (169–182 ms) trails CUDA-Oxide (130–133 ms) and
+CubeCL (138–146 ms), and beats cuTile (215–224 ms). Desktop offload's older 164–168 ms
+measurement is from a different session. On the laptop, CPU radix (127–136 ms) is about
+1.5× as fast as the fastest measured GPU engine, offload (194–198 ms). The GPU
+implementations show how much additional work it takes to approach or exceed that baseline.
 
-`CubeCL` changes the portability trade-off. In the same sessions it came within about 5% of
-CUDA-Oxide on the desktop (138–146 ms against 130–133 ms) and about 10% of HIP on the
-laptop (222–224 ms against 201–212 ms), from one 788-LOC code base. The two vendor-specific
+`CubeCL` changes the portability trade-off. Comparing range midpoints in the same sessions,
+it takes about 8% longer than CUDA-Oxide on the desktop (138–146 ms against 130–133 ms)
+and about 13% longer than HIP on the laptop (230–235 ms against 201–209 ms), from one
+788-LOC code base. Laptop offload is faster still (194–198 ms). The two vendor-specific
 engines together are about 2,700 LOC. Its cost is a young framework and a copy path, 42% of
 its code, that works around the framework's slow transfers.

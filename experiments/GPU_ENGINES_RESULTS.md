@@ -17,14 +17,14 @@ workshop on choosing between SIMD, threads, and GPUs in Rust.
 
 | Engine | Where it runs | What it is |
 | --- | --- | --- |
-| `Cpu(n)` | CPU, n threads | Rust's comparison sort (`par_sort_unstable`), then `from_slice` (SIMD) |
-| `CpuRadix(n)` | CPU, n threads | Safe parallel radix sort (`src/gpu/cpu_radix.rs`), then `from_slice` |
+| `Cpu(n)` | CPU, n threads | Rust's comparison sort (`par_sort_unstable`), then parallel range finding (SIMD) |
+| `CpuRadix(n)` | CPU, n threads | Safe parallel radix sort (`src/gpu/cpu_radix.rs`), then parallel range finding |
 | `Cuda` | NVIDIA | CUDA-Oxide: Rust kernels compiled by NVIDIA's `cargo oxide` |
 | `CuTile` | NVIDIA | NVIDIA cuTile tile kernels |
 | `Wgpu` | any (Vulkan, DX12, Metal) | Portable compute shaders through wgpu |
 | `Offload` | NVIDIA or AMD RDNA | Rust kernels through Rust's nightly `std::offload` (OpenMP runtime) |
 | `Hip` | AMD RDNA | The same Rust kernels as `Offload`, launched directly through AMD's HIP runtime |
-| `CubeCl` | NVIDIA or AMD | Rust kernels compiled at run time by CubeCL for CUDA or HIP (uncommitted, added November 15) |
+| `CubeCl` | NVIDIA or AMD | Rust kernels compiled at run time by CubeCL for CUDA or HIP (added November 15, committed in `db4e68a6`) |
 
 `Offload` and `Hip` share one kernel source. The GPU engines all radix-sort on the GPU,
 find the ranges there, and download only the ranges.
@@ -49,7 +49,79 @@ find the ranges there, and download only the ranges.
   [AMD and NVIDIA portability measurements](AMD_NVIDIA_PORTABILITY_BENCHMARK.md)
   include hardware-accelerated wgpu through Dozen on the laptop.
 
-## 100M `u32` values (duplicates, shuffled)
+## 100M `u32` values: same-session comparisons (November 15–16)
+
+The article and plot use the measurements in this section. Desktop CPU, CUDA-Oxide,
+cuTile, and CubeCL ran in one November 15 session. The laptop reran CPU, CubeCL, HIP,
+offload, and native Windows wgpu sequentially on November 16, from source `56041ee2`.
+The desktop was left available for other work; its offload and wgpu measurements
+remain from November 14 and are marked †. Desktop GPU activity from another program
+was about 40% during the November 15 session, so these observations do not establish
+idle-machine performance.
+
+Each GPU entry spans three run medians, each from three timed samples after warmup.
+The WSL2 CPU entries pool six desktop or nine laptop run medians across the engine
+builds. CPU range finding is parallel in these sessions.
+
+| Engine | Desktop, WSL2 ms | Laptop, WSL2 ms |
+| --- | ---: | ---: |
+| `CpuRadix(16)` | 169–182 | 127–136 |
+| `Cpu(16)` | 216–251 | 216–242 |
+| `Cuda` (CUDA-Oxide) | 130–133 | unavailable |
+| `CubeCl` | 138–146 | 230–235 |
+| `CuTile` | 215–224 | unavailable |
+| `Hip` | unavailable | 201–209 |
+| `Offload` | 164–168 † | 194–198 |
+
+**Native Windows controls**
+
+| Machine | `CpuRadix(16)` ms | `Cpu(16)` ms | `Wgpu` ms |
+| --- | ---: | ---: | ---: |
+| Desktop, November 14 † | 225–288 | 254–310 | 295–392 |
+| Laptop, November 16 | 188–194 | 370–378 | 526–545 |
+
+Windows controls come from the same three runs as wgpu on each machine. Laptop wgpu
+selected the Radeon 8060S through Vulkan. It loses to the CPU engines in those same
+Windows runs; comparisons with WSL2 also include OS, compiler, and driver differences.
+
+- **CPU radix still wins on the laptop.** Using range midpoints, it is about 1.5× as
+  fast as the fastest measured GPU engine, offload.
+- **The fresh laptop runs change the HIP/offload ranking.** Offload took 194–198 ms,
+  versus HIP's 201–209 ms. The November 14 runs below had HIP ahead. These timings
+  do not isolate the reason for the change.
+- **CubeCL trades some speed for less repository code.** At range midpoints it takes
+  about 8% longer than CUDA-Oxide on the desktop and 13% longer than HIP on the laptop,
+  from 788 code LOC for both vendors versus about 2,700 LOC for CUDA-Oxide plus HIP.
+  Laptop offload is faster still. CubeCL, wgpu, and offload all share kernels across
+  the two vendors, with different compiler and runtime paths.
+- **The CPU baselines now find ranges in parallel.** The historical November 14
+  results below predate that change and should not be mixed into current rankings.
+- **Copies dominated the first CubeCL version.** Its built-in transfers took
+  250–570 ms for 100M keys. Reused pinned buffers with keys encoded directly into
+  them brought the desktop total from about 380 ms to 138–146 ms.
+
+Raw data: [desktop CubeCL](results/table100m_desktop_cubecl_wsl_20261115.csv),
+[desktop CUDA-Oxide and cuTile](results/table100m_desktop_cuda_cutile_wsl_20261115.csv),
+[laptop WSL2](results/table100m_laptop_wsl_20261116.csv),
+[laptop Windows](results/table100m_laptop_windows_20261116.csv).
+The [WSL2 run log](results/table100m_laptop_wsl_20261116.log) and
+[Windows run log](results/table100m_laptop_windows_20261116.log) record source hashes,
+compiler versions, build output, and adapter selection; the Windows log also records
+its driver and power scheme. WSL2 adapter lines describe the unused wgpu adapter
+(llvmpipe), not the HIP, CubeCL, or offload devices: those runs explicitly selected
+the GPU-only engines. The HIP build retained the previously observed nightly
+`OnceLock<…>: Sync` recursion warning; all builds and benchmark checks completed. The previous
+[laptop CubeCL/HIP session](results/table100m_laptop_cubecl_hip_wsl_20261115.csv)
+remains archived, but supplies no headline values here.
+
+CubeCL builds with `--features cubecl_experimental` on stable Rust; set
+`RANGE_SET_BLAZE_REQUIRE_CUBECL_GPU=1` to require a GPU. On the laptop it also needs
+the HIP runtime paths from the [offload guide](../docs/offload.md).
+
+## Historical 100M `u32` measurements (November 14, before parallel range finding)
+
+These tables retain the earlier revision for comparison. Use the same-session
+measurements above for the current article and plot.
 
 Each GPU engine ran 3 times (each run the median of 3 samples). WSL2 CPU ranges pool
 6 run medians per machine across two engine builds; Windows CPU ranges use 3.
@@ -99,38 +171,6 @@ optimal thread count. Cross-OS comparisons also include compiler and driver diff
   (`Cpu(16)`), every GPU engine except wgpu looks like a clear win on both machines.
 - **Windows CPU timings differ from WSL2.** wgpu loses to `CpuRadix(16)` in the
   same-OS controls on both machines; desktop wgpu and comparison-sort ranges overlap.
-
-## 100M `u32` values: same-session rerun with `CubeCl` (November 15)
-
-The `CubeCl` engine was measured later, from the uncommitted working tree that also has
-parallel range finding after the CPU sorts. To compare it fairly, the nearest engines were
-rerun in the same sessions with the same harness and arguments. Each row is 3 runs, each the
-median of 3 samples. During the desktop runs, another program kept the GPU about 40% busy,
-so desktop GPU times may be slightly pessimistic.
-
-| Machine | `CubeCl` ms | Vendor engine ms | `CpuRadix(16)` ms | `Cpu(16)` ms |
-| --- | ---: | ---: | ---: | ---: |
-| Desktop | 138–146 | `Cuda` 130–133; `CuTile` 215–224 | 169–182 | 216–251 |
-| Laptop | 222–224 | `Hip` 201–212 | 123–133 | 213–221 |
-
-- **One code base comes within 5–10% of each vendor-specific engine.** `CubeCl` uses about
-  790 code LOC for both vendors. `Cuda` and `Hip` together take about 2,700.
-- **It is the only engine that runs on both machines' GPUs from the same kernels** (wgpu
-  does too, but only as a native Windows build in these measurements).
-- **The CPU still wins on the laptop.** `CpuRadix(16)` is about 1.6× faster than any GPU
-  engine there.
-- **`CpuRadix(16)` is faster than in the earlier table** (169–182 against 213–225 ms on
-  the desktop) because it now finds ranges in parallel after the sort.
-- **Copies dominated the first version.** With `CubeCL`'s built-in transfers, 100M keys took
-  250–570 ms to copy. Driver copies through reused pinned buffers, with keys encoded
-  straight into them, brought the desktop total from about 380 ms to 138–146 ms.
-
-Raw data: [desktop `CubeCl`](results/table100m_desktop_cubecl_wsl_20261115.csv), [desktop
-`Cuda` and `CuTile`](results/table100m_desktop_cuda_cutile_wsl_20261115.csv), [laptop
-`CubeCl` and `Hip`](results/table100m_laptop_cubecl_hip_wsl_20261115.csv). `CubeCl` builds
-with `--features cubecl_experimental` on stable Rust; set `RANGE_SET_BLAZE_REQUIRE_CUBECL_GPU=1`
-to require a GPU. On the laptop it also needs the HIP runtime paths from the
-[offload guide](../docs/offload.md).
 
 ## 2³⁰ values (1.07 billion `u64` keys, duplicates, shuffled)
 
@@ -213,6 +253,8 @@ The committed summary CSVs and run notes are in [`results/`](results/):
 
 | Measurement | Files |
 | --- | --- |
+| 100M laptop rerun, WSL2 | [CSV](results/table100m_laptop_wsl_20261116.csv), [log](results/table100m_laptop_wsl_20261116.log) |
+| 100M laptop rerun, Windows | [CSV](results/table100m_laptop_windows_20261116.csv), [log](results/table100m_laptop_windows_20261116.log) |
 | 100M desktop, WSL2 | [CSV](results/table100m_desktop_wsl_20261114.csv) |
 | 100M laptop, WSL2 | [CSV](results/table100m_laptop_wsl_20261114.csv) |
 | 100M desktop, Windows | [CSV](results/table100m_desktop_windows_20261114.csv) |
@@ -241,8 +283,12 @@ gpu_ingest --quick --cpu 16 --type u64 1073741824
 
 Build separately for each engine; see the [offload guide](../docs/offload.md) for
 the pinned toolchain, runtime paths, architecture selection, and hardware-required
-settings. Windows runs also pass `--cpu 32`. The original runner scripts and extra
-output are local to `/mnt/c/deldir/rsb-gpu-bench/`, not part of this repository.
+settings. Windows runs also pass `--cpu 32`. The November 16 laptop rerun uses Rust `1.99.1`
+for CubeCL and Windows wgpu, and `nightly-2026-11-12` for HIP and offload. Its WSL2
+builds set `RANGE_SET_BLAZE_ROCM_LIB` to the laptop's ROCm 7.2.1 library directory,
+`RANGE_SET_BLAZE_OFFLOAD_ARCH=gfx1151`, and `OMP_TARGET_OFFLOAD=MANDATORY`, with
+the GPU-required variables set so missing hardware cannot silently use a CPU fallback.
+The original runner scripts and extra output are local to `/mnt/c/deldir/rsb-gpu-bench/`, not part of this repository.
 
 For a fully reproducible rerun, archive the exact source and lockfile identity,
 per-build commands and compiler versions (including CUDA-Oxide), driver and runtime
