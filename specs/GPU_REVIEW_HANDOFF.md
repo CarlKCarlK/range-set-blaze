@@ -33,36 +33,69 @@ correctness review of the kernels.
 - Full reproduction still needs per-build source/lockfile identity, compiler,
   driver/runtime versions, backend, power state, and individual sample durations.
 
-## Branch integration plan
+## Branch integration status
 
-1. Review and commit the documentation corrections on `gpu-on-simd`.
-2. Prepare PR #38's title and description around the current
+The documentation review is committed as `b97205e7` on `gpu-on-simd`. Inspection
+of the actual laptop found `amd-gpu-portability` at `fb0bfa0b`, six commits ahead
+of its published branch, with 10 modified tracked files and 3 untracked Rust
+files. All 13 files were compared byte-for-byte with desktop Git history: each
+matches either the current implementation or a historical version. No unique
+source content was found among them.
+
+The laptop's committed history was imported into `review/amd-laptop-committed`.
+The local `review/amd-gpu-integration` branch merges it with `b97205e7` without
+conflicts and updates the historical AMD planning documents. The laptop branch
+was fast-forwarded to `a2f0daa9` after its historical working-file copies were
+saved in stash `preserve-historical-gpu-copies-before-20261114-integration`.
+Its worktree is clean. Do not pop that stash over the newer implementation.
+
+## Validation
+
+On the Radeon 8060S laptop, both `gpu::hip::tests::gpu_ranges_match_host_ranges`
+and `gpu::offload::tests::gpu_ranges_match_host_ranges` passed on `a2f0daa9`
+(2 passed, 0 failed). They compare GPU results with host ranges across multiple
+sizes and key patterns. The command was:
+
+```sh
+cargo +nightly-2026-11-12 test --locked --features hip_nightly_experimental,offload_nightly_experimental --lib gpu_ranges_match_host_ranges -- --test-threads=1
+```
+
+The existing user-local ROCm runtime paths were used, with
+`HSA_ENABLE_DXG_DETECTION=1`, `RANGE_SET_BLAZE_OFFLOAD_ARCH=gfx1151`,
+`OMP_TARGET_OFFLOAD=MANDATORY`, `RANGE_SET_BLAZE_REQUIRE_OFFLOAD_GPU=1`, and
+`RANGE_SET_BLAZE_REQUIRE_HIP_GPU=1`. Build output is under
+`~/.cache/range-set-blaze-gpu-review` on the laptop.
+
+The desktop `just check-all` run on `b97205e7` encountered the previously
+recorded pinned-nightly/CUDA dependency failure: `cuda-host` calls
+`core::intrinsics::type_id`, unavailable in that nightly (`E0425`). This review
+does not change the affected library code, dependency revisions, or toolchains.
+The integration branch has identical Rust source, manifests, and lockfile to
+`b97205e7`; its additional changes are documentation. Relative file links and
+`git diff --check` passed on the integration branch.
+
+## Remaining integration work
+
+1. Prepare PR #38's title and description around the current
    `from_shuffled_slice` / `from_shuffled_slices` API and `shuffled_slices` feature,
    including CPU comparison/radix, wgpu, CUDA-Oxide, cuTile, offload, and HIP.
    Its present description still names the earlier in-place API and engines.
    Keep existing public-API changes visible to reviewers; this review adds none.
-3. Inspect the actual laptop worktree before integration. PR #39's discussion
-   records a laptop-local merge at `8cb9dd21`, while its published head and the
-   desktop branch remain `0852f9db`. The desktop's stale branch is not proof of
-   the laptop's current state. Fetch and inspect local changes and commits before
-   merging the reviewed `gpu-on-simd` commit there. Avoid overwriting or resetting
-   laptop work.
-4. Validate the resulting branch. Run `just check-all` before pushing; record the
-   exact merged commit and distinguish hardware checks from hosted CI. Confirm
-   GPU-required offload/HIP correctness on the laptop with its existing runtime
-   environment before claiming hardware coverage for that merged revision.
-5. Update the AMD handoff and portability spec to reflect completed measurements,
-   then prepare PR #39's description around the remaining branch delta. Its
-   published delta currently consists of two historical planning documents.
+2. Track hosted CI separately from the local gate limitation above. Full
+   offload/HIP suite coverage and a deliberate resolution of the pinned-nightly
+   CUDA dependency mismatch remain follow-up work; the two targeted hardware
+   checks do not establish that every hardware test passed.
+3. Prepare PR #39's description around the remaining branch delta, including the
+   preserved historical laptop report and updated handoff documents. Its
+   published delta previously consisted of two historical planning documents.
    Decide whether keeping that PR serves a purpose after synchronization.
-6. Inspect `~/programs/range-set-blaze-hip` for unique commits, uncommitted changes,
+4. Inspect `~/programs/range-set-blaze-hip` for unique commits, uncommitted changes,
    and results before proposing cleanup. Keep runner scripts and raw output under
    `/mnt/c/deldir/rsb-gpu-bench/`.
 
-The local read-only merge preview of `55540f3f` and `0852f9db` found no conflicts:
-the AMD-only commit adds two spec files. It does not validate the laptop-local
-merge or a future merge involving the documentation corrections. Neither PR has
-been merged or edited as part of this review.
+Neither PR has been merged or edited as part of this review. The historical
+laptop work is preserved through merge ancestry, not replaced by the desktop's
+stale local `amd-gpu-portability` ref.
 
 ## Follow-up measurements
 

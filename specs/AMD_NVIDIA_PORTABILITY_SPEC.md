@@ -2,6 +2,16 @@
 
 # AMD laptop and NVIDIA desktop portability experiment
 
+## Status as of November 14, 2026
+
+The initial procedure below is retained as historical planning context. AMD
+offload and HIP now run the shared kernel bodies, and matched CPU/wgpu and
+repeated 100M measurements have been collected. The wgpu scratch cache used in
+the initial measurements has since been removed. See [CPU and GPU engine
+results](../experiments/GPU_ENGINES_RESULTS.md), the [offload guide](../docs/offload.md),
+and the [integration handoff](GPU_REVIEW_HANDOFF.md) for current results,
+runtime setup, evidence limitations, and remaining validation.
+
 ## Goal and systems
 
 Test wgpu, nightly Rust offload, and CPU SIMD portability. Benchmark each
@@ -104,4 +114,5 @@ separate findings.
 - [Current desktop offload and wgpu measurements](../experiments/OFFLOAD_AND_WGPU_BENCHMARK.md)
   establish the recent baseline and its limitations.
 
-No new laptop measurements have been collected for this experiment yet.
+At the time of this initial plan, no new laptop measurements had been collected.
+The reports linked in the status section supersede that initial state.
